@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Registration</title>
+    <link rel="stylesheet" href="../static/register_employee.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Register as Employee</h1>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="alerts">
+                    {% for category, message in messages %}
+                        <div class="alert {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <form action="/register" method="POST">
+            <label for="name">First Name:</label>
+            <input type="text" id="name" name="name" placeholder="John" required>
+
+            <label for="last_name">Last Name:</label>
+            <input type="text" id="last_name" name="last_name" placeholder="Doe" required>
+
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" placeholder="example@domain.com" required>
+
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" placeholder="********" required>
+
+            <label for="re_password">Re-enter Password:</label>
+            <input type="password" id="re_password" name="re_password" placeholder="********" required>
+
+            <button type="submit" class="btn">Register</button>
+        </form>
+
+        <div class="link">
+            Already have an account? <a href="/login">Login</a>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,626 @@
+
+
+
+export FLASK_APP=employee_app.app
+flask run --port=5000
+
+<img src="{{ product.image_url }}" alt="image_url" style="max-width: 50px;">
+
+
+
+
+
+from itertools import product
+import os
+import re
+import json 
+import logging
+from flask import Flask, render_template, jsonify, request, redirect, url_for, session, flash
+from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
+from flask import get_flashed_messages
+from db_connection import get_db_connection
+from flask import Flask
+
+app = Flask(__name__)
+
+# Configure Flask app with environment variables for security and logging
+app.secret_key = os.getenv("SECRET_KEY", "your-default-secure-secret-key")
+
+# Configure logger
+logging.basicConfig(level=logging.DEBUG)
+
+
+# Employee Registration Route
+@app.route('/register', methods=['GET', 'POST'])
+def register_employee():
+    if request.method == 'POST':
+        first_name = request.form['first_name']
+        last_name = request.form['last_name']
+        email = request.form['email']
+        password = request.form['password']
+        re_password = request.form['re_password']
+
+        # Validate password strength
+        password_regex = r"^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
+        if not re.match(password_regex, password):
+            flash("Password must contain at least 8 characters, one uppercase letter, one number, and one special character.", "danger")
+            return redirect(url_for('register_employee'))
+
+        # Check if passwords match
+        if password != re_password:
+            flash("Passwords do not match.", "danger")
+            return redirect(url_for('register_employee'))
+
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            hashed_password = generate_password_hash(password)
+            cursor.execute(
+                "INSERT INTO employees (first_name, last_name, email, hashed_password) VALUES (%s, %s, %s, %s)",
+                (first_name, last_name, email, hashed_password)
+            )
+            conn.commit()
+            cursor.close()
+            conn.close()
+            flash("Registration successful! Please log in.", "success")
+            return redirect(url_for('login_employee'))
+        except Exception as e:
+            app.logger.error(f"Error during registration: {str(e)}")
+            flash(f"Error registering: {str(e)}", "danger")
+            return redirect(url_for('register_employee'))
+
+    return render_template('register_employee.html')
+
+
+# Employee Login Route
+# Clear flash messages before login
+@app.route('/login', methods=['GET', 'POST'])
+def login_employee():
+    # Retrieve and clear any previous flash messages
+    get_flashed_messages()
+    
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("SELECT * FROM employees WHERE email = %s", (email,))
+            employee = cursor.fetchone()
+            cursor.close()
+            conn.close()
+
+            if employee and check_password_hash(employee['hashed_password'], password):
+                # Save employee session details
+                session['employee_id'] = employee['id']
+                session['employee_name'] = employee['first_name']
+                session['employee_last_name'] = employee['last_name']
+                session['employee_email'] = employee['email']
+                session['employee_role'] = employee['role']
+                flash(f"Welcome back, {employee['first_name']}!", "success")
+                return redirect(url_for('portal_employee'))
+            else:
+                flash("Invalid email or password.", "danger")
+        except Exception as e:
+            app.logger.error(f"Error during login: {str(e)}")
+            flash(f"Error logging in: {str(e)}", "danger")
+
+    return render_template('login_employee.html')
+
+# Employee Dashboard Route
+@app.route('/')
+def index_employee():
+    # This is the index page that does not require login
+    return render_template('index_employee.html')
+
+
+# Employee Portal Route (after login)
+@app.route('/portal')
+def portal_employee():
+    try:
+        if 'employee_id' not in session:
+            flash("You must be logged in to view the portal.", "warning")
+            return redirect(url_for('login_employee'))  # Redirect to login page if not logged in
+
+        # Retrieve employee data from session
+        employee_id = session.get('employee_id')
+
+        # Fetch the employee details from the database
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT first_name, last_name, email, role FROM employees WHERE id = %s", (employee_id,))
+        employee = cursor.fetchone()
+        cursor.close()
+        conn.close()
+
+        if employee:
+            # Pass employee data to the portal template
+            return render_template('portal_employee.html', 
+                                   name=employee['first_name'], 
+                                   last_name=employee['last_name'],
+                                   email=employee['email'], 
+                                   role=employee['role'])
+        else:
+            flash("Employee not found.", "danger")
+            return redirect(url_for('login_employee'))
+
+    except Exception as e:
+        flash(f"An error occurred: {str(e)}", "danger")
+        return redirect(url_for('login_employee'))  # In case of an error, redirect to login
+    
+
+
+
+# Folder to store uploaded product images
+UPLOAD_FOLDER = 'static/uploads'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['ALLOWED_EXTENSIONS'] = {'jpg', 'jpeg', 'png', 'gif'}
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# Manage Inventory Route
+@app.route('/manage_inventory', methods=['GET', 'POST'])
+def manage_inventory():
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    if request.method == 'POST':
+        if 'product_name' in request.form:
+            # Handle Add/Update Product
+            product_name = request.form['product_name']
+            price = float(request.form['price'])
+            weight = float(request.form['weight'])
+            quantity = int(request.form['stock_quantity'])
+            image = request.files.get('product_image')
+
+            # Save image if uploaded
+            image_url = None
+            if image and image.filename:
+                filename = secure_filename(image.filename)
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                image.save(filepath)
+                image_url = f"{UPLOAD_FOLDER}/{filename}"
+
+            # Insert into the database
+            try:
+                cursor.execute(
+                    "INSERT INTO products (name, price, weight, quantity, image_url) "
+                    "VALUES (%s, %s, %s, %s, %s)",
+                    (product_name, price, weight, quantity, image_url)
+                )
+                conn.commit()
+                flash("Product added successfully!", "success")
+            except Exception as e:
+                flash(f"Error adding product: {str(e)}", "danger")
+
+        elif 'search_product_name' in request.form:
+            # Handle Update Quantity
+            search_product_name = request.form['search_product_name']
+            additional_quantity = int(request.form['additional_quantity'])
+
+            # Update quantity for the given product
+            try:
+                cursor.execute(
+                    "UPDATE products SET quantity = quantity + %s WHERE name = %s",
+                    (additional_quantity, search_product_name)
+                )
+                conn.commit()
+                if cursor.rowcount > 0:
+                    flash("Quantity updated successfully!", "success")
+                else:
+                    flash("Product not found.", "warning")
+            except Exception as e:
+                flash(f"Error updating quantity: {str(e)}", "danger")
+
+    # Fetch all products to display in the table
+    cursor.execute("SELECT * FROM products")
+    products = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return render_template('manage_inventory.html', products=products)
+
+
+@app.route('/delete_product/<int:product_id>', methods=['GET'])
+def delete_product(product_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # Delete product from the database
+        cursor.execute("DELETE FROM products WHERE id = %s", (product_id,))
+        conn.commit()
+        flash("Product deleted successfully!", "success")
+    except Exception as e:
+        flash(f"Error deleting product: {str(e)}", "danger")
+    finally:
+        cursor.close()
+        conn.close()
+
+    return redirect(url_for('manage_inventory'))
+
+
+
+
+
+@app.route('/search_product', methods=['GET'])
+def search_product():
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    
+    search_query = request.args.get('search_query', '')
+    search_results = []
+    
+    if search_query:
+        # Search query to find matching products
+        cursor.execute("SELECT * FROM products WHERE name LIKE %s", (f"%{search_query}%",))
+        search_results = cursor.fetchall()
+    
+    cursor.close()
+    conn.close()
+    
+    # Render the manage_inventory.html page with the search results
+    return render_template('manage_inventory.html', products=search_results)
+
+
+# Logout Route
+@app.route('/logout')
+def logout():
+    session.clear()  # Clear session to log the user out
+    flash("You have been logged out.", "info")
+    return redirect(url_for('index_employee'))
+
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
+
+
+
+
+
+
+
+
+
+
+import os
+import re
+import json 
+from flask import Flask, render_template, jsonify, request, redirect, url_for, session, flash
+from werkzeug.security import generate_password_hash, check_password_hash
+from db_connection import get_db_connection
+
+app = Flask(__name__)
+
+# Secure, unique secret key from environment variable or fallback
+app.secret_key = os.getenv("SECRET_KEY", "your-default-secure-secret-key")
+
+# Upload folder for product images
+UPLOAD_FOLDER = 'static/uploads'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# Home Route with Search Functionality
+# Home Route with Search Functionality
+@app.route('/')
+def index():
+    search_query = request.args.get('search', '').strip().lower()  # Normalize query to lowercase
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Execute search query or fetch all products (excluding those with quantity 0)
+        if search_query:
+            cursor.execute(
+                "SELECT * FROM products WHERE LOWER(name) LIKE %s AND quantity > 0 ORDER BY name ASC",
+                (f"%{search_query}%",)
+            )
+        else:
+            cursor.execute("SELECT * FROM products WHERE quantity > 0 ORDER BY name ASC")
+
+        products = cursor.fetchall()
+        cursor.close()
+        conn.close()
+
+        return render_template('index.html', products=products)
+    except Exception as e:
+        return render_template('error.html', message=f"Error fetching products: {str(e)}")
+
+# Registration Route
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        name = request.form['name']
+        last_name = request.form['last_name']
+        email = request.form['email']
+        password = request.form['password']
+        re_password = request.form['re_password']
+
+        # Validate password strength
+        password_regex = r"^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
+        if not re.match(password_regex, password):
+            flash("Password must be at least 8 characters long, with an uppercase letter, number, and special character.", "danger")
+            return redirect(url_for('register'))
+
+        # Check if passwords match
+        if password != re_password:
+            flash("Passwords do not match.", "danger")
+            return redirect(url_for('register'))
+
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            hashed_password = generate_password_hash(password)
+            cursor.execute(
+                "INSERT INTO users (name, last_name, email, hashed_password) VALUES (%s, %s, %s, %s)",
+                (name, last_name, email, hashed_password)
+            )
+            conn.commit()
+            cursor.close()
+            conn.close()
+            flash("Registration successful! Please log in.", "success")
+            return redirect(url_for('login'))
+        except Exception as e:
+            return render_template('error.html', message=f"Error registering: {str(e)}")
+
+    return render_template('register_user.html')
+
+# Login Route
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
+            user = cursor.fetchone()
+            cursor.close()
+            conn.close()
+
+            if user and check_password_hash(user['hashed_password'], password):
+                session['user_id'] = user['id']
+                session['user_name'] = user['name']
+                flash(f"Welcome, {user['name']}!", "success")
+                return redirect(url_for('index'))
+            else:
+                flash("Invalid email or password.", "danger")
+        except Exception as e:
+            return render_template('error.html', message=f"Error logging in: {str(e)}")
+
+    return render_template('login_user.html')
+
+
+
+
+# Add to Cart Button
+@app.route('/add_to_cart/<int:product_id>', methods=['POST'])
+def add_to_cart(product_id):
+    if 'user_id' not in session:
+        flash("Please log in to add products to your cart.", "danger")
+        return redirect(url_for('login'))
+
+    try:
+        quantity = int(request.form['quantity'])
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM products WHERE id = %s", (product_id,))
+        product = cursor.fetchone()
+        cursor.close()
+        conn.close()
+
+        if not product:
+            flash("Product not found.", "danger")
+            return redirect(url_for('index'))
+
+        if 'cart' not in session:
+            session['cart'] = []
+
+        # Update cart or add new item
+        for item in session['cart']:
+            if item['id'] == product['id']:
+                item['quantity'] += quantity
+                break
+        else:
+            session['cart'].append({
+                'id': product['id'],
+                'name': product['name'],
+                'price': product['price'],
+                'quantity': quantity
+            })
+
+        session.modified = True
+        flash("Product added to cart!", "success")
+    except Exception as e:
+        flash(f"Error adding to cart: {str(e)}", "danger")
+
+    return redirect(url_for('index'))
+
+
+# Logout Route
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash("You have been logged out.", "info")
+    return redirect(url_for('index'))
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Inventory</title>
+    <link rel="stylesheet" href="../static/manage_inventory.css">
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+    <a href="{{ url_for('manage_inventory') }}" style="color: #ff9900; text-decoration: none;">
+        <div class="logo" style="font-size: 24px; font-weight: bold;">FreshMart Inventory</div>
+    </a>
+
+    <div class="search-bar">
+        <form action="manage_inventory.php" method="get">
+            <div class="search-bar">
+                <input type="text" id="search-input" name="search" placeholder="Search products..." value="">
+                <button type="submit">Search</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="nav">
+        <a href="{{ url_for('portal_employee') }}" style="text-decoration: none; display: flex; align-items: center; color: #ff9900;">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#ff9900" width="24px" height="24px" style="margin-right: 5px;">
+                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+            </svg>
+            <span style="color: white;">Home</span>
+        </a>
+
+        <a href="logout.php" style="text-decoration: none; display: flex; align-items: center; color: #ff9900;">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="#ff9900" width="24px" height="24px" viewBox="0 0 24 24" style="margin-right: 5px;">
+                <path d="M16 13v-2H7V9.59L8.41 11 7 12.41 4.59 10 7 7.59 8.41 9H16V7l4 4-4 4z"></path>
+                <path d="M5 5h6V3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h6v-2H5z"></path>
+            </svg>
+            <span style="color: white;">Logout</span>
+        </a>
+    </div>
+</div>
+
+<h1>Manage Inventory</h1>
+<div class="container">
+    <form action="/manage_inventory" method="post" enctype="multipart/form-data">
+        <h2>Add/Update Product</h2>
+
+        <label>Product Name:</label>
+        <input type="text" name="product_name" required>
+
+        <label>Price:</label>
+        <input type="number" name="price" step="0.01" required>
+
+        <label>Weight (lbs):</label>
+        <input type="number" name="weight" step="0.01" required>
+
+        <label>Stock Quantity:</label>
+        <input type="number" name="stock_quantity" required>
+
+        <label>Product Image:</label>
+        <input type="file" name="product_image">
+        <button type="submit">Add/Update Product</button>
+    </form>
+
+    <form method="post">
+        <h2>Update Quantity</h2>
+        <label>Search Product Name:</label>
+        <input type="text" name="search_product_name" required>
+        <label>Additional Quantity:</label>
+        <input type="number" name="additional_quantity" min="1" required>
+        <button type="submit">Update Quantity</button>
+    </form>
+
+    <h2>Current Inventory</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Price</th>
+                <th>Weight</th>
+                <th>Stock</th>
+                <th>Image</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in products %}
+                {% if product.quantity > 0 %}  <!-- Only show products with stock > 0 -->
+                    <tr>
+                        <td>{{ product.name }}</td>
+                        <td>${{ product.price }}</td>
+                        <td>{{ product.weight }} lbs</td>
+                        <td>{{ product.quantity }}</td>
+                        <td>
+                            {% if product.image_url %}
+                                <img src="{{ url_for('static', filename=product.image_url) }}" alt="Product Image" style="max-width: 50px;">
+                            {% else %}
+                                No image
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('delete_product', product_id=product.id) }}" onclick="return confirm('Delete this product?');">Delete</a>
+                        </td>
+                    </tr>
+                {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+</body>
+</html>
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Login</title>
+    <link rel="stylesheet" href="../static/login_employee.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Login as Employee</h1>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="alerts">
+                    {% for category, message in messages %}
+                        <div class="alert {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <form action="/login" method="POST">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" placeholder="example@domain.com" required>
+
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" placeholder="********" required>
+
+            <button type="submit" class="btn">Login</button>
+        </form>
+
+        <div class="link">
+            Don't have an account? <a href="/register">Register</a>
+        </div>
+    </div>
+</body>
+</html>

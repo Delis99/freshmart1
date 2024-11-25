@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Inventory</title>
+    <link rel="stylesheet" href="../static/manage_inventory.css">
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+    <a href="{{ url_for('manage_inventory') }}" style="color: #ff9900; text-decoration: none;">
+        <div class="logo" style="font-size: 24px; font-weight: bold;">FreshMart Inventory</div>
+    </a>
+
+    <div class="search-bar">
+        <form action="manage_inventory.php" method="get">
+            <div class="search-bar">
+                <input type="text" id="search-input" name="search" placeholder="Search products..." value="">
+                <button type="submit">Search</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="nav">
+        <a href="{{ url_for('portal_employee') }}" style="text-decoration: none; display: flex; align-items: center; color: #ff9900;">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#ff9900" width="24px" height="24px" style="margin-right: 5px;">
+                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+            </svg>
+            <span style="color: white;">Home</span>
+        </a>
+
+        <a href="logout.php" style="text-decoration: none; display: flex; align-items: center; color: #ff9900;">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="#ff9900" width="24px" height="24px" viewBox="0 0 24 24" style="margin-right: 5px;">
+                <path d="M16 13v-2H7V9.59L8.41 11 7 12.41 4.59 10 7 7.59 8.41 9H16V7l4 4-4 4z"></path>
+                <path d="M5 5h6V3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h6v-2H5z"></path>
+            </svg>
+            <span style="color: white;">Logout</span>
+        </a>
+    </div>
+</div>
+
+<h1>Manage Inventory</h1>
+<div class="container">
+    <form action="/manage_inventory" method="post" enctype="multipart/form-data">
+        <h2>Add/Update Product</h2>
+
+        <label>Product Name:</label>
+        <input type="text" name="product_name" required>
+
+        <label>Price:</label>
+        <input type="number" name="price" step="0.01" required>
+
+        <label>Weight (lbs):</label>
+        <input type="number" name="weight" step="0.01" required>
+
+        <label>Stock Quantity:</label>
+        <input type="number" name="stock_quantity" required>
+
+        <label>Product Image:</label>
+        <input type="file" name="product_image">
+        <button type="submit">Add/Update Product</button>
+    </form>
+
+    <form method="post">
+        <h2>Update Quantity</h2>
+        <label>Search Product Name:</label>
+        <input type="text" name="search_product_name" required>
+        <label>Additional Quantity:</label>
+        <input type="number" name="additional_quantity" min="1" required>
+        <button type="submit">Update Quantity</button>
+    </form>
+
+    <h2>Current Inventory</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Price</th>
+                <th>Weight</th>
+                <th>Stock</th>
+                <th>Image</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in products %}
+                {% if product.quantity > 0 %} 
+                    <tr>
+                        <td>{{ product.name }}</td>
+                        <td>${{ product.price }}</td>
+                        <td>{{ product.weight }} lbs</td>
+                        <td>{{ product.quantity }}</td>
+                        <td>
+                            {% if product.image_url %}
+                                <img src="{{ url_for('static', filename=product.image_url) }}" alt="Product Image" style="max-width: 50px;">
+                            {% else %}
+                                No image
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('delete_product', product_id=product.id) }}" onclick="return confirm('Delete this product?');">Delete</a>
+                        </td>
+                    </tr>
+                {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+</body>
+</html>

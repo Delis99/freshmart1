@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Home - FreshMart</title>
+    <link rel="stylesheet" href="../static/portal_employee.css">
+</head>
+<body>
+
+    <form action="/portal" method="POST">
+    <!-- Header -->
+    <div class="header">
+        <a href="{{ url_for('portal_employee') }}" style="color: #ff9900; text-decoration: none;">
+            <div class="logo" style="font-size: 24px; font-weight: bold;">FreshMart Employee</div>
+        </a>
+        
+        <div class="nav">
+            <!-- Profile Dropdown -->
+            <div class="dropdown-container">
+                <a href="#" id="profile-link">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Profile Icon">
+                    Profile
+                </a>
+                <div class="dropdown">
+                    <p><span>Name:</span> {{ name }} {{ last_name }}</p>
+                    <p><span>Email:</span> {{ email }}</p>
+                    <p><span>Role:</span> {{ role }}</p>
+                </div>
+            </div>
+
+            <a href="{{ url_for('logout') }}" style="text-decoration: none; display: flex; align-items: center; color: #ff9900;">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="#ff9900" width="24px" height="24px" viewBox="0 0 24 24" style="margin-right: 5px;">
+                    <path d="M16 13v-2H7V9.59L8.41 11 7 12.41 4.59 10 7 7.59 8.41 9H16V7l4 4-4 4z"></path>
+                    <path d="M5 5h6V3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h6v-2H5z"></path>
+                </svg>
+                <span style="color: white;">Logout</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Main Content --> 
+        <div class="content">
+            <h1>Welcome, {{ name }} {{ last_name }}!</h1>
+        </div>
+
+        <div class="cards-container" style="display: flex; gap: 20px; justify-content: center; margin-top: 20px;">
+            <!-- Manage Orders Card -->
+            <div class="card">
+                <a href="{{ url_for('portal_employee') }}" style="text-decoration: none">
+                    <img src="https://cdn-icons-png.flaticon.com/512/2910/2910818.png" alt="Orders">
+                    <h2>Manage Orders</h2>
+                    <p>Track and update customer orders.</p>
+                </a>
+            </div>
+
+            <!-- Order History Card -->
+            <div class="card">
+                <a href="{{ url_for('portal_employee') }}" style="text-decoration: none">
+                    <img src="https://cdn-icons-png.flaticon.com/512/685/685352.png" alt="Order History">
+                    <h2>Order History</h2>
+                    <p>View and manage customer order history.</p>
+                </a>
+            </div>
+
+            <!-- Inventory Manage Card -->
+            <div class="card">
+                <a href="{{ url_for('manage_inventory') }}" style="text-decoration: none">
+                    <img src="https://cdn-icons-png.flaticon.com/512/869/869636.png" alt="Inventory">
+                    <h2>Inventory</h2>
+                    <p>View and update stock levels.</p>
+                </a>
+            </div>
+
+            <!-- Customer Support Card -->
+            <div class="card">
+                <a href="{{ url_for('portal_employee') }}" style="text-decoration: none">
+                    <img src="https://cdn-icons-png.flaticon.com/512/2354/2354300.png" alt="Support">
+                    <h2>Customer Support</h2>
+                    <p>Assist customers with their queries.</p>
+                </a>
+            </div>
+
+            <!-- Employee Profile Card -->
+            <div class="card">
+                <a href="{{ url_for('portal_employee') }}" style="text-decoration: none">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Employee Information">
+                    <h2>Employee Information</h2>
+                    <p>Manage employee profiles and roles.</p>
+                </a>
+            </div>
+
+            <!-- Token Management Card -->
+            <div class="card">
+                <a href="{{ url_for('portal_employee') }}" style="text-decoration: none">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3064/3064163.png" alt="Token">
+                    <h2>Manage Tokens</h2>
+                    <p>Generate and manage employee tokens.</p>
+                </a>
+            </div>
+
+            <!-- Label Management Card -->
+            <div class="card">
+                <a href="{{ url_for('portal_employee') }}" style="text-decoration: none">
+                    <img src="https://cdn-icons-png.flaticon.com/512/4320/4320334.png" alt="Label Icon">
+                    <h2>Manage Labels</h2>
+                    <p>Create and customize delivery labels.</p>
+                </a>
+            </div>
+        </div>
+    </div>
+</form>
+</body>
+</html>

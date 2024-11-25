@@ -1,0 +1,448 @@
+
+
+export FLASK_APP=user_app.app
+flask run --port=5001
+
+ onsubmit="{% if not session['user_id'] %}showAlert(); return false;{% endif %}"
+
+
+import os
+import re
+from flask import Flask, render_template, request, redirect, url_for, session, flash
+from werkzeug.security import generate_password_hash, check_password_hash
+from db_connection import get_db_connection
+
+app = Flask(__name__)
+
+app.secret_key = os.getenv("SECRET_KEY", "your-default-secure-secret-key")
+
+
+UPLOAD_FOLDER = 'static/uploads'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# Home 
+@app.route('/')
+def index():
+    search_query = request.args.get('search', '').strip().lower()
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Search
+        if search_query:
+            cursor.execute(
+                "SELECT * FROM products WHERE LOWER(name) LIKE %s ORDER BY name ASC",
+                (f"%{search_query}%",)
+            )
+        else:
+            cursor.execute("SELECT * FROM products ORDER BY name ASC")
+
+        products = cursor.fetchall()
+        cursor.close()
+        conn.close()
+
+        return render_template('index.html', products=products)
+    except Exception as e:
+        return render_template('error.html', message=f"Error fetching products: {str(e)}")
+
+# Registration
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        name = request.form['name']
+        last_name = request.form['last_name']
+        email = request.form['email']
+        password = request.form['password']
+        re_password = request.form['re_password']
+
+        # Validate password strength
+        password_regex = r"^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
+        if not re.match(password_regex, password):
+            flash("Password must be at least 8 characters long, with an uppercase letter, number, and special character.", "danger")
+            return redirect(url_for('register'))
+
+        # Check if passwords match
+        if password != re_password:
+            flash("Passwords do not match.", "danger")
+            return redirect(url_for('register'))
+
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            hashed_password = generate_password_hash(password)
+            cursor.execute(
+                "INSERT INTO users (name, last_name, email, hashed_password) VALUES (%s, %s, %s, %s)",
+                (name, last_name, email, hashed_password)
+            )
+            conn.commit()
+            cursor.close()
+            conn.close()
+            flash("Registration successful! Please log in.", "success")
+            return redirect(url_for('login'))
+        except Exception as e:
+            return render_template('error.html', message=f"Error registering: {str(e)}")
+
+    return render_template('register_user.html')
+
+# Login 
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
+            user = cursor.fetchone()
+            cursor.close()
+            conn.close()
+
+            if user and check_password_hash(user['hashed_password'], password):
+                session['user_id'] = user['id']
+                session['user_name'] = user['name']
+                flash(f"Welcome, {user['name']}!", "success")
+                return redirect(url_for('index'))
+            else:
+                flash("Invalid email or password.", "danger")
+        except Exception as e:
+            return render_template('error.html', message=f"Error logging in: {str(e)}")
+
+    return render_template('login_user.html')
+
+# Add to Cart Button
+@app.route('/add_to_cart/<int:product_id>', methods=['POST'])
+def add_to_cart(product_id):
+    if 'user_id' not in session:
+        flash("Please log in to add products to your cart.", "danger")
+        return redirect(url_for('login'))
+
+    try:
+        quantity = int(request.form['quantity'])
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM products WHERE id = %s", (product_id,))
+        product = cursor.fetchone()
+        cursor.close()
+        conn.close()
+
+        if not product:
+            flash("Product not found.", "danger")
+            return redirect(url_for('index'))
+
+        if 'cart' not in session:
+            session['cart'] = []
+
+        
+        for item in session['cart']:
+            if item['id'] == product['id']:
+                item['quantity'] += quantity
+                break
+        else:
+            session['cart'].append({
+                'id': product['id'],
+                'name': product['name'],
+                'price': product['price'],
+                'quantity': quantity
+            })
+
+        session.modified = True
+        flash("Product added to cart!", "success")
+    except Exception as e:
+        flash(f"Error adding to cart: {str(e)}", "danger")
+
+    return redirect(url_for('index'))
+
+# Logout 
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash("You have been logged out.", "info")
+    return redirect(url_for('index'))
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
+
+
+
+
+
+
+
+home.html
+
+    
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home - FreshMart</title>
+    <link rel="stylesheet" href="../static/css/home.css">
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+
+    <a href="{{ url_for('home') }}" style="color: #ff9900; text-decoration: none;">
+        <div class="logo" style="font-size: 24px; font-weight: bold;">FreshMart</div>
+    </a>
+    
+    <!-- Contact Dropdown -->
+     <div class="nav">
+    <div class="dropdown-container">
+    
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+        <a href="#" style="text-decoration: none; display: flex; align-items: center; color: #ff9900;">
+            <i class="fas fa-phone-alt" style="margin-right: 8px; font-size: 24px;"></i>
+            <span style="color: white">Contact Us</span>
+        </a>
+    
+        <div class="dropdown">
+            <p><span>Phone:</span> +1-800-555-1234</p>
+            <p><span>Email:</span> support@freshmart.com</p>
+            <p><span>Hours:</span> Mon-Fri, 9 AM - 6 PM</p>
+            <a href="customer_support_form.html" class="logout-btn">Feedback</a>
+        </div>
+        </div>
+    </div>
+    
+    
+    <div class=" ">
+    <input type="text" id="search-input" placeholder="Search for products...">
+    <button onclick="searchProduct()">Search</button>
+    </div>
+    
+    <!-- Profile Dropdown -->
+    <div class="nav">
+    <div class="dropdown-container">
+    
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+        <a href="#" style="text-decoration: none; display: flex; align-items: center; color: #ff9900;">
+            <i class="fas fa-user-circle" style="margin-right: 8px; font-size: 24px;"></i>
+            <div style="color: white">
+                {{ name }}
+            </div>
+        </a>
+    
+        <div class="dropdown">
+            <p><span>Name:</span> {{ name }} {{ last_name }}</p>
+            <p><span>Email:</span> {{ email }}</p>
+            <p><span>Contact:</span> {{ contact }}</p>
+            <a href="index.php" class="logout-btn">Logout</a>
+        </div>
+    </div>
+    
+    <!-- Cart Dropdown -->
+    <div class="cart-dropdown-container">
+        <a href="cart.php">
+            <img src="https://cdn-icons-png.flaticon.com/512/1170/1170576.png" alt="Cart Icon">
+            <span class="cart-count">{{ cart_count }}</span>
+        </a>
+    <div class="cart-dropdown">
+        <div class="cart-header">Your Cart</div>
+        {% if cart_count > -1 %}
+            {% for item in cart_items %}
+                <div class="cart-item">
+                    <div>
+                        <p class="item-name">{{ item.name }}</p>
+                        <p class="item-quantity">Qty: {{ item.quantity }}</p>
+                    </div>
+                    <p class="item-price">${{ "%.2f" | format(item.quantity * item.price) }}</p>
+                </div>
+            {% endfor %}
+            <div class="cart-footer">
+                Total: <span>${{ "%.2f" | format(total_cost) }}</span>
+            </div>
+            <a href="/cart" class="checkout-btn">Go to Cart</a>
+        {% else %}
+            <div style="padding: 20px; text-align: center;">Your cart is empty.</div>
+        {% endif %}
+    </div>
+</div>
+
+    
+    <!-- Notification Dropdown -->
+    <div class="dropdown-container">
+        <a href="#" style="text-decoration: none; display: flex; align-items: center; color: #ff9900;">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="#ff9900" width="24px" height="24px" viewBox="0 0 24 24" style="margin-right: 5px; animation: pulse 1s infinite;">
+                <path d="M12 22c1.1 0 1.99-.9 1.99-2H10c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5S11 3.17 11 4v.68C8.13 5.36 6.5 7.92 6.5 11v5l-1.7 1.7c-.29.29-.3.77-.01 1.06.29.29.77.29 1.06 0L7 17h10l1.15 1.76c.29.29.77.29 1.06 0 .29-.29.29-.77 0-1.06L18 16zM4 18h16v-2H4v2z"></path>
+            </svg>
+            <span style="color: white">Notifications</span>
+        </a>
+        <div class="dropdown">
+            <div style="text-align: center;" class="cart-header">Notifications</div>
+            <div style="padding: 10px; font-size: 14px;">
+                <p>Your order #1234 is ready for delivery.</p>
+                <p>Your order #1235 is on the way!</p>
+                <p>Your order #1236 has been delivered.</p>
+            </div>
+            <a href="" class="checkout-btn">View All</a>
+        </div>
+    </div>
+    </div>
+    </div>
+
+    <div class="content">
+        <h1 style="text-align: center;">Welcome, {{ name }}!</h1>
+        <div class="products">
+            {% for product in products %}
+            <div class="product-card">
+                <img src="{{ product.image_path }}" alt="Product Image">
+                <h3>{{ product.name }}</h3>
+                <p>Price: ${{ product.price }}</p>
+                <p>Weight: {{ product.weight }} lbs</p>
+                <p>Stock: {{ product.quantity }}</p>
+                <input type="number" id="quantity-{{ product.id }}" value="1" min="1" max="{{ product.quantity }}" />
+                <button onclick="addToCart({ product.id }, document.getElementById('quantity-{{ product.id }}').value)">Add to Cart</button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    <script>
+        // Add existing JavaScript here
+        function addToCart(itemId, quantity) {
+            if (quantity < 1) {
+                alert("Please enter a valid quantity.");
+                return;
+            }
+
+            fetch('add_to_cart.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ item_id: itemId, quantity: quantity }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    location.reload(); // Refresh to update the cart count
+                } else {
+                    alert("Error: " + data.message);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function searchProduct() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const products = document.querySelectorAll('.product-card');
+
+            products.forEach(product => {
+                const name = product.querySelector('h3').textContent.toLowerCase();
+                if (name.includes(query)) {
+                    product.style.display = 'block';
+                } else {
+                    product.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+index.html
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreshMart - Products</title>
+    <link rel="stylesheet" href="../static/css/index.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script>
+        function showAlert() {
+            alert("Please register or log in to add products to your cart.");
+        }
+    </script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="top-bar">
+            <a href="{{ url_for('index') }}" style="color: #ff9900; text-decoration: none;">
+                <div class="logo" style="font-size: 24px; font-weight: bold;">FreshMart</div>
+            </a>
+            <!-- Contact Dropdown -->
+            <div class="nav">
+                <div class="dropdown-container">
+                    <a href="#" style="text-decoration: none; display: flex; align-items: center; color: #ff9900;">
+                        <i class="fas fa-phone-alt" style="margin-right: 8px; font-size: 24px;"></i>
+                        <span style="color: white">Contact Us</span>
+                    </a>
+                    <div class="dropdown">
+                        <p><span>Phone:</span> +1-800-555-1234</p>
+                        <p><span>Email:</span> support@freshmart.com</p>
+                        <p><span>Hours:</span> Mon-Fri, 9 AM - 6 PM</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="search-bar">
+                <form action="{{ url_for('index') }}" method="GET" class="gform">
+                    <div class="search-bar">
+                        <input type="text" name="search" placeholder="Search products..." value="{{ request.args.get('search', '') }}">
+                        <button type="submit">Search</button>
+                    </div>
+                </form>
+            </div>
+
+
+            <div class="nav-icons">
+                <a href="{{ url_for('login') }}">
+                    <img src="https://cdn-icons-png.flaticon.com/512/747/747545.png" alt="Login Icon">
+                    Login
+                </a>
+                <a href="{{ url_for('register') }}">
+                    <i class="fas fa-file-signature"></i>Register
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+        <div class="content">
+            <h1>Welcome to FreshMart</h1>
+            <p>Your one-stop shop for fresh and organic groceries.</p>
+            <div class="products">
+                {% for product in products %}
+                    <div class="product-card">
+                        <!-- Display image, or default if not available -->
+                        <img src="{{ url_for('static', filename=product['image_url'] if product['image_url'] else 'images/default.png') }}" alt="{{ product['name'] }}">
+                        <h3>{{ product['name'] }}</h3>
+                        <p>Price: ${{ product['price'] }}</p>
+                        <p>Weight: {{ product['weight'] }} Lbs</p>
+                        <p>Available Quantity: {{ product['quantity'] }}</p>
+                        
+                        <!-- Only show add-to-cart button if quantity is greater than 0 -->
+                        {% if product['quantity'] > 0 %}
+                        <form method="POST" action="{{ url_for('add_to_cart', product_id=product['id']) }}">
+                            <button type="submit" class="btn btn-primary">Add to Cart</button>
+                        </form>
+                        {% else %}
+                            <p class="out-of-stock">Out of Stock</p>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </main>
+</body>
+</html>

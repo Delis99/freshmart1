@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreshMart - Products</title>
+    <link rel="stylesheet" href="../static/css/index.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script>
+        function showAlert() {
+            alert("Please register or log in to add products to your cart.");
+        }
+    </script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="top-bar">
+            <a href="{{ url_for('index') }}" style="color: #ff9900; text-decoration: none;">
+                <div class="logo" style="font-size: 24px; font-weight: bold;">FreshMart</div>
+            </a>
+            <!-- Contact Dropdown -->
+            <div class="nav">
+                <div class="dropdown-container">
+                    <a href="#" style="text-decoration: none; display: flex; align-items: center; color: #ff9900;">
+                        <i class="fas fa-phone-alt" style="margin-right: 8px; font-size: 24px;"></i>
+                        <span style="color: white">Contact Us</span>
+                    </a>
+                    <div class="dropdown">
+                        <p><span>Phone:</span> +1-800-555-1234</p>
+                        <p><span>Email:</span> support@freshmart.com</p>
+                        <p><span>Hours:</span> Mon-Fri, 9 AM - 6 PM</p>
+                    </div>
+                </div>
+            </div>
+
+             <!-- Search Input -->
+            <div class="search-bar">
+                <form action="{{ url_for('index') }}" method="GET" class="gform">
+                    <div class="search-bar">
+                        <input type="text" name="search" placeholder="Search products..." value="{{ request.args.get('search', '') }}">
+                        <button type="submit">Search</button>
+                    </div>
+                </form>
+            </div>
+
+ 
+             <!-- Login Button -->
+            <div class="nav-icons">
+                <a href="{{ url_for('login') }}">
+                    <img src="https://cdn-icons-png.flaticon.com/512/747/747545.png" alt="Login Icon">
+                    Login
+                </a>
+                <a href="{{ url_for('register') }}">
+                    <i class="fas fa-file-signature"></i>Register
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+        <div class="content">
+            <h1>Welcome to FreshMart</h1>
+            <p>Your one-stop shop for fresh and organic groceries.</p>
+            <div class="products">
+                {% for product in products %}
+                    <div class="product-card">
+
+                        <img src="{{ url_for('static', filename=product['image_url'] if product['image_url'] else 'images/default.png') }}" alt="{{ product['name'] }}">
+                        <h3>{{ product['name'] }}</h3>
+                        <p>Price: ${{ product['price'] }}</p>
+                        <p>Weight: {{ product['weight'] }} Lbs</p>
+                        <p>Available Quantity: {{ product['quantity'] }}</p>
+                        
+                        {% if product['quantity'] > 0 %}
+                        <form method="POST" action="{{ url_for('add_to_cart', product_id=product['id']) }}">
+                            <input type="number" id="quantity-{{ product.id }}" name="quantity" value="1" min="1" max="{{ product.quantity }}" require />
+                            <button type="submit" class="btn btn-primary">Add to Cart</button>
+                        </form>
+                        {% else %}
+                            <p class="out-of-stock">Out of Stock</p>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </main>
+</body>
+</html>
+
+
+
+
+
+
+
+
