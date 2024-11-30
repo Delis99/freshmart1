@@ -1,27 +1,43 @@
 
-
 export FLASK_APP=user_app.app
 flask run --port=5001
 
- onsubmit="{% if not session['user_id'] %}showAlert(); return false;{% endif %}"
+
+
 
 
 import os
 import re
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+import logging
+import mysql
+from datetime import timedelta
+from flask_session import Session
+from flask import Flask, jsonify, render_template, request, redirect, url_for, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 from db_connection import get_db_connection
 
+
 app = Flask(__name__)
+app.config['DEBUG'] = True
 
 app.secret_key = os.getenv("SECRET_KEY", "your-default-secure-secret-key")
 
+# Configure session
+app.permanent_session_lifetime = timedelta(days=7)
+app.config['SESSION_TYPE'] = 'filesystem'
+Session(app)
 
-UPLOAD_FOLDER = 'static/uploads'
+
+UPLOAD_FOLDER = 'user_app/static/uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# Home 
+
+@app.before_request
+def make_session_permanent():
+    session.permanent = True
+
+# Index page
 @app.route('/')
 def index():
     search_query = request.args.get('search', '').strip().lower()
@@ -45,47 +61,94 @@ def index():
         return render_template('index.html', products=products)
     except Exception as e:
         return render_template('error.html', message=f"Error fetching products: {str(e)}")
+    
 
-# Registration
+
+
+
+
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        name = request.form['name']
+        # Collect data from the form
+        first_name = request.form['first_name']
         last_name = request.form['last_name']
         email = request.form['email']
         password = request.form['password']
         re_password = request.form['re_password']
+        contact = request.form['contact']
 
         # Validate password strength
         password_regex = r"^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
         if not re.match(password_regex, password):
-            flash("Password must be at least 8 characters long, with an uppercase letter, number, and special character.", "danger")
-            return redirect(url_for('register'))
+            flash("Password must contain at least 8 characters, one uppercase letter, one number, and one special character.", "danger")
+            return redirect(url_for('register_user'))
 
         # Check if passwords match
         if password != re_password:
             flash("Passwords do not match.", "danger")
-            return redirect(url_for('register'))
+            return redirect(url_for('register_user'))
 
         try:
             conn = get_db_connection()
             cursor = conn.cursor()
+
+            # Check if email already exists
+            cursor.execute("SELECT 1 FROM users WHERE email = %s", (email,))
+            email_exists = cursor.fetchone()
+
+            if email_exists:
+                flash("Email already exists. Please use a different email.", "danger")
+                cursor.close()
+                conn.close()
+                return redirect(url_for('register_user'))
+
+            # Insert new user data
             hashed_password = generate_password_hash(password)
             cursor.execute(
-                "INSERT INTO users (name, last_name, email, hashed_password) VALUES (%s, %s, %s, %s)",
-                (name, last_name, email, hashed_password)
+                "INSERT INTO users (name, last_name, email, hashed_password, contact) VALUES (%s, %s, %s, %s, %s)",
+                (first_name, last_name, email, hashed_password, contact)
             )
             conn.commit()
             cursor.close()
             conn.close()
+
             flash("Registration successful! Please log in.", "success")
             return redirect(url_for('login'))
         except Exception as e:
-            return render_template('error.html', message=f"Error registering: {str(e)}")
+            app.logger.error(f"Error during registration: {str(e)}")
+            flash(f"Error registering: {str(e)}", "danger")
+            return redirect(url_for('register_user'))
 
     return render_template('register_user.html')
 
-# Login 
+
+@app.route('/check_email', methods=['POST'])
+def check_email():
+    email = request.json.get('email')
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT 1 FROM users WHERE email = %s", (email,))
+        email_exists = cursor.fetchone() is not None
+        cursor.close()
+        conn.close()
+        return {"exists": email_exists}, 200
+    except Exception as e:
+        app.logger.error(f"Error checking email: {str(e)}")
+        return {"error": str(e)}, 500
+
+
+
+
+
+
+
+
+
+
+#Login
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -97,63 +160,406 @@ def login():
             cursor = conn.cursor(dictionary=True)
             cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
             user = cursor.fetchone()
-            cursor.close()
-            conn.close()
 
             if user and check_password_hash(user['hashed_password'], password):
                 session['user_id'] = user['id']
                 session['user_name'] = user['name']
                 flash(f"Welcome, {user['name']}!", "success")
-                return redirect(url_for('index'))
+                return redirect(url_for('home'))
             else:
                 flash("Invalid email or password.", "danger")
+                return render_template('login_user.html')
+
         except Exception as e:
-            return render_template('error.html', message=f"Error logging in: {str(e)}")
+            flash(f"Error logging in: {str(e)}", "danger")
+            return render_template('login_user.html')
+
+        finally:
+            cursor.close()
+            conn.close()
 
     return render_template('login_user.html')
+
 
 # Add to Cart Button
 @app.route('/add_to_cart/<int:product_id>', methods=['POST'])
 def add_to_cart(product_id):
     if 'user_id' not in session:
-        flash("Please log in to add products to your cart.", "danger")
         return redirect(url_for('login'))
 
+    user_id = session['user_id']
+    quantity = int(request.form['quantity'])
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
     try:
-        quantity = int(request.form['quantity'])
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM products WHERE id = %s", (product_id,))
-        product = cursor.fetchone()
+        # Check if the product is already in the cart
+        cursor.execute("SELECT quantity FROM cart WHERE user_id = %s AND product_id = %s", (user_id, product_id))
+        existing_item = cursor.fetchone()
+
+        if existing_item:
+            # Update the cart with the new quantity
+            cursor.execute("UPDATE cart SET quantity = quantity + %s WHERE user_id = %s AND product_id = %s", (quantity, user_id, product_id))
+        else:
+            # Add the new item to the cart
+            cursor.execute("INSERT INTO cart (user_id, product_id, quantity) VALUES (%s, %s, %s)", (user_id, product_id, quantity))
+
+        conn.commit()
+        flash("Item added to your cart!", "success")
+
+    except Exception as e:
+        flash(f"Error adding item to cart: {str(e)}", "danger")
+    finally:
         cursor.close()
         conn.close()
 
-        if not product:
-            flash("Product not found.", "danger")
-            return redirect(url_for('index'))
+    return redirect(url_for('home'))
 
-        if 'cart' not in session:
-            session['cart'] = []
 
-        
-        for item in session['cart']:
-            if item['id'] == product['id']:
-                item['quantity'] += quantity
-                break
+
+#Home page
+@app.route('/home', methods=['GET', 'POST'])
+def home():
+    if 'user_id' not in session:
+        flash("Please log in first.", "warning")
+        return redirect(url_for('login'))
+
+    user_id = session['user_id']
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        # Fetch user details
+        cursor.execute("SELECT name, last_name, email, contact FROM users WHERE id = %s", (user_id,))
+        user = cursor.fetchone()
+
+        if not user:
+            flash("User not found.", "danger")
+            return redirect(url_for('login'))
+
+        # Fetch products
+        search_query = request.args.get('search', '')
+        if search_query:
+            cursor.execute("SELECT * FROM products WHERE quantity > 0 AND name LIKE %s", ('%' + search_query + '%',))
         else:
-            session['cart'].append({
-                'id': product['id'],
-                'name': product['name'],
-                'price': product['price'],
-                'quantity': quantity
-            })
+            cursor.execute("SELECT * FROM products WHERE quantity > 0")
+        products = cursor.fetchall()
 
-        session.modified = True
-        flash("Product added to cart!", "success")
+        # Fetch cart details
+        cursor.execute("""
+            SELECT p.name, c.quantity, p.price 
+            FROM cart AS c
+            JOIN products AS p ON c.product_id = p.id
+            WHERE c.user_id = %s
+        """, (user_id,))
+        cart_items = cursor.fetchall()
+
+        # Calculate cart totals
+        cart_count = sum(item['quantity'] for item in cart_items)
+        total_cost = sum(item['quantity'] * item['price'] for item in cart_items)
+
     except Exception as e:
-        flash(f"Error adding to cart: {str(e)}", "danger")
+        flash(f"Error fetching data: {str(e)}", "danger")
+        return render_template('error.html', message="An error occurred while loading the home page.")
 
-    return redirect(url_for('index'))
+    finally:
+        cursor.close()
+        conn.close()
+
+    return render_template('home.html',
+                           name=user['name'],
+                           last_name=user['last_name'],
+                           email=user['email'],
+                           contact=user['contact'],
+                           products=products,
+                           cart_items=cart_items,
+                           cart_count=cart_count,
+                           total_cost=total_cost)
+
+
+
+# View Cart
+@app.route('/cart')
+def cart():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    user_id = session['user_id']
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        # Join `cart` and `products` to fetch detailed product information
+        query = """
+            SELECT 
+                c.id AS cart_id, 
+                p.id AS product_id, 
+                p.name, 
+                p.price, 
+                p.weight, 
+                p.image_url, 
+                c.quantity
+            FROM cart c
+            JOIN products p ON c.product_id = p.id
+            WHERE c.user_id = %s
+        """
+        cursor.execute(query, (user_id,))
+        cart_items = cursor.fetchall()
+
+        # Calculate totals
+        total_price = sum(item['price'] * item['quantity'] for item in cart_items)
+        total_weight = sum(item['weight'] * item['quantity'] for item in cart_items)
+        unique_items = len(cart_items)
+        delivery_charge = 5 if total_weight > 20 else 0
+        final_total = total_price + delivery_charge
+
+    except Exception as e:
+        flash(f"Error retrieving cart: {e}", "danger")
+        cart_items = []
+        total_price = 0
+        total_weight = 0
+        unique_items = 0
+        delivery_charge = 0
+        final_total = 0
+
+    finally:
+        cursor.close()
+        conn.close()
+
+    return render_template(
+        'cart_user.html',
+        cart_items=cart_items,
+        unique_items=unique_items,
+        total_price=total_price,
+        total_weight=total_weight,
+        delivery_charge=delivery_charge,
+        final_total=final_total
+    )
+
+
+@app.route('/update_quantity', methods=['POST'])
+def update_quantity():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    user_id = session['user_id']
+    cart_id = int(request.form['cart_id'])  # Use cart_id to identify the item in the cart
+    quantity = int(request.form['quantity'])
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # Update the quantity of the item in the cart
+        cursor.execute("UPDATE cart SET quantity = %s WHERE id = %s AND user_id = %s", (quantity, cart_id, user_id))
+        conn.commit()
+        flash("Cart updated successfully", "success")
+
+    except Exception as e:
+        flash(f"Error updating cart: {e}", "danger")
+
+    finally:
+        cursor.close()
+        conn.close()
+
+    return redirect(url_for('cart'))
+
+
+@app.route('/remove_from_cart/<int:product_id>')
+def remove_from_cart(product_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    user_id = session['user_id']
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # Remove the product from the cart for the logged-in user
+        cursor.execute("DELETE FROM cart WHERE product_id = %s AND user_id = %s", (product_id, user_id))
+        conn.commit()
+        flash("Item removed from cart", "success")
+
+    except Exception as e:
+        flash(f"Error removing item from cart: {e}", "danger")
+
+    finally:
+        cursor.close()
+        conn.close()
+
+    return redirect(url_for('cart'))
+
+
+
+@app.route('/checkout', methods=['GET', 'POST'])
+def checkout():
+    if 'user_id' not in session:
+        session['user_id'] = 1  # Simulate login for testing
+
+    user_id = session['user_id']
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # Fetch saved details for the dropdown
+    cursor.execute("""
+        SELECT first_name, last_name, street_address, city, state, zip_code, 
+               phone_number, card_number, expiry_date, cvv 
+        FROM information_user WHERE user_id = %s
+    """, (user_id,))
+    saved_addresses = cursor.fetchall()
+
+    # Fetch cart items
+    cursor.execute("""
+        SELECT p.id AS product_id, p.name, p.price, c.quantity, p.weight, p.image_url, (p.price * c.quantity) AS total
+        FROM cart c
+        JOIN products p ON c.product_id = p.id
+        WHERE c.user_id = %s
+    """, (user_id,))
+    cart_items = cursor.fetchall()
+
+    # Calculate totals
+    total_weight = sum(item['weight'] * item['quantity'] for item in cart_items)
+    total_price = sum(item['total'] for item in cart_items)
+    delivery_charge = 5 if total_weight > 20 else 0
+    final_total = total_price + delivery_charge
+
+    if request.method == 'POST':
+        # Fetch form data
+        first_name = request.form['first_name']
+        last_name = request.form['last_name']
+        street_address = request.form['street_address']
+        city = request.form['city']
+        state = request.form['state']
+        zip_code = request.form['zip_code']
+        phone_number = request.form['phone_number']
+        card_number = request.form['card_number']
+        reenter_card_number = request.form['reenter_card_number']
+        expiry_date = request.form['expiry_date']
+        cvv = request.form['cvv']
+        save_details = 'save_details' in request.form  # Check if the save checkbox is checked
+
+        # Ensure the card numbers match
+        if card_number != reenter_card_number:
+            flash("Card numbers do not match. Please try again.", "danger")
+            return redirect(url_for('checkout'))
+
+        # Prepare the order summary
+        order_summary = ", ".join([f"{item['name']} x {item['quantity']}" for item in cart_items])
+
+        try:
+            # Save user information in `information_user` table if "Save details" is checked
+            if save_details:
+                cursor.execute("""
+                    SELECT 1 FROM information_user WHERE user_id = %s
+                """, (user_id,))
+                existing_info = cursor.fetchone()
+
+                if existing_info:
+                    # Update existing details
+                    cursor.execute("""
+                        UPDATE information_user
+                        SET first_name = %s, last_name = %s, street_address = %s, city = %s, state = %s,
+                            zip_code = %s, phone_number = %s, card_number = %s, expiry_date = %s, cvv = %s
+                        WHERE user_id = %s
+                    """, (first_name, last_name, street_address, city, state, zip_code,
+                          phone_number, card_number, expiry_date, cvv, user_id))
+                else:
+                    # Insert new details
+                    cursor.execute("""
+                        INSERT INTO information_user (
+                            user_id, first_name, last_name, street_address, city, state, 
+                            zip_code, phone_number, card_number, expiry_date, cvv
+                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """, (user_id, first_name, last_name, street_address, city, state, zip_code,
+                          phone_number, card_number, expiry_date, cvv))
+
+            # Insert the order into the orders table
+            cursor.execute("""
+                INSERT INTO orders (
+                    user_id, first_name, last_name, street_address, city, state, 
+                    zip_code, phone_number, card_number, expiry_date, cvv,
+                    order_summary, total_price, delivery_charge, final_total
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (user_id, first_name, last_name, street_address, city, state, zip_code,
+                  phone_number, card_number, expiry_date, cvv,
+                  order_summary, total_price, delivery_charge, final_total))
+
+            # Decrease product quantities based on the order
+            for item in cart_items:
+                cursor.execute("""
+                    UPDATE products SET quantity = quantity - %s WHERE id = %s
+                """, (item['quantity'], item['product_id']))
+
+            # Clear the user's cart
+            cursor.execute("DELETE FROM cart WHERE user_id = %s", (user_id,))
+
+            conn.commit()
+            flash("Order placed successfully, and cart cleared!", "success")
+        except Exception as e:
+            flash(f"Error placing order: {e}", "danger")
+        finally:
+            cursor.close()
+            conn.close()
+
+            # Redirect to the thank-you page
+        return redirect(url_for('thank_you_for_checkout'))
+
+    cursor.close()
+    conn.close()
+
+    return render_template(
+        'checkout.html',
+        cart_items=cart_items,
+        total_price=total_price,
+        total_weight=total_weight,
+        delivery_charge=delivery_charge,
+        final_total=final_total,
+        saved_addresses=saved_addresses
+    )
+
+
+@app.route('/thank_you_for_checkout')
+def thank_you_for_checkout():
+    return render_template('thank_you_for_checkout.html')
+
+
+
+
+@app.route('/feedback', methods=['GET', 'POST'])
+def submit_feedback():
+    if request.method == 'POST':
+        name = request.form['name']
+        email = request.form['email']
+        feedback = request.form['feedback']
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        try:
+            cursor.execute("""
+                INSERT INTO feedback (name, email, feedback) 
+                VALUES (%s, %s, %s)
+            """, (name, email, feedback))
+            conn.commit()
+            return render_template('feedback_user.html', success=True)  # Pass success flag
+        except Exception as e:
+            return render_template('feedback_user.html', error=True)  # Pass error flag
+        finally:
+            cursor.close()
+            conn.close()
+
+    return render_template('feedback_user.html')
+
+
+
+
+
+
+
 
 # Logout 
 @app.route('/logout')
@@ -164,9 +570,6 @@ def logout():
 
 if __name__ == '__main__':
     app.run(debug=True)
-
-
-
 
 
 
@@ -445,4 +848,418 @@ index.html
         </div>
     </main>
 </body>
+</html>
+
+
+Index.
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreshMart - Products</title>
+    <link rel="stylesheet" href="../static/css/index.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <!--This part of the code is to display an alert to the user that they must register or login before bying a product-->
+    <script>
+        function showAlert() {
+            alert("Please register or log in to add products to your cart.");
+        }
+    </script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="top-bar">
+            <a href="{{ url_for('index') }}" style="color: #ff9900; text-decoration: none;">
+                <div class="logo" style="font-size: 24px; font-weight: bold;">FreshMart</div>
+            </a>
+            <!-- Contact Dropdown -->
+            <div class="nav">
+                <div class="dropdown-container">
+                    <a href="#" style="text-decoration: none; display: flex; align-items: center; color: #ff9900;">
+                        <i class="fas fa-phone-alt" style="margin-right: 8px; font-size: 24px;"></i>
+                        <span style="color: white">Contact Us</span>
+                    </a>
+                    <div class="dropdown">
+                        <p><span>Phone:</span> +1-800-555-1234</p>
+                        <p><span>Email:</span> support@freshmart.com</p>
+                        <p><span>Hours:</span> Mon-Fri, 9 AM - 6 PM</p>
+                    </div>
+                </div>
+            </div>
+
+             <!-- Search Input -->
+            <div class="search-bar">
+                <form action="{{ url_for('index') }}" method="GET" class="gform, searchform">
+                    <div class="search-bar">
+                        <input type="text" name="search" placeholder="Search products..." value="{{ request.args.get('search', '') }}">
+                        <button type="submit">Search</button>
+                    </div>
+                </form>
+            </div>
+
+ 
+             <!-- Login Button -->
+            <div class="nav-icons">
+                <a href="{{ url_for('login') }}">
+                    <img src="https://cdn-icons-png.flaticon.com/512/747/747545.png" alt="Login Icon">
+                    Login
+                </a>
+                <a href="{{ url_for('register') }}">
+                    <i class="fas fa-file-signature"></i>Register
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+        <div class="content">
+            <h1>Welcome to FreshMart</h1>
+            <p>Your one-stop shop for fresh and organic groceries.</p>
+            <div class="products">
+                {% for product in products %}
+                    <div class="product-card" >
+                        <img src="{{ url_for('static', filename=product['image_url']) }}" alt="{{ product['name'] }}">
+                        <h3>{{ product['name'] }}</h3>
+                        <p>Price: ${{ product['price'] }}</p>
+                        <p>Weight: {{ product['weight'] }} Lbs</p>
+                        <p>Available Quantity: {{ product['quantity'] }}</p>
+                        
+                        {% if product['quantity'] > 0 %}
+                        <form method="POST" action="{{ url_for('add_to_cart', product_id=product['id']) }}">
+                            <input type="number" id="quantity-{{ product.id }}" name="quantity" value="1" min="1" max="{{ product.quantity }}" require />
+                            <button type="submit" class="btn btn-primary">Add to Cart</button>
+                        </form>
+                        {% else %}
+                            <p style="color: blue;" class="out-of-stock">Out of Stock</p>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </main>
+</body>
+</html>
+
+{% if product['quantity'] > 0 %}
+    <div class="product-card">
+        <img src="{{ url_for('static', filename=product['image_url']) }}" alt="{{ product['name'] }}">
+        <h3>{{ product['name'] }}</h3>
+        <p>Price: ${{ product['price'] }}</p>
+        <p>Weight: {{ product['weight'] }} Lbs</p>
+        <p>Available Quantity: {{ product['quantity'] }}</p>
+        <form method="POST" action="{{ url_for('add_to_cart', product_id=product['id']) }}">
+            <input type="number" id="quantity-{{ product.id }}" name="quantity" value="1" min="1" max="{{ product.quantity }}" required />
+            <button type="submit" class="btn btn-primary">Add to Cart</button>
+        </form>
+    </div>
+{% endif %}
+
+
+
+
+
+
+# Add to Cart Button
+# Add to cart
+@app.route('/add_to_cart/<int:product_id>', methods=['POST'])
+def add_to_cart(product_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    user_id = session['user_id']
+    quantity = int(request.form['quantity'])
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # Check if the product is already in the cart
+        cursor.execute("SELECT quantity FROM cart WHERE user_id = %s AND product_id = %s", (user_id, product_id))
+        existing_item = cursor.fetchone()
+
+        if existing_item:
+            # Update the quantity if the product is already in the cart
+            cursor.execute("UPDATE cart SET quantity = quantity + %s WHERE user_id = %s AND product_id = %s", (quantity, user_id, product_id))
+        else:
+            # Insert new item into the cart
+            cursor.execute("INSERT INTO cart (user_id, product_id, quantity) VALUES (%s, %s, %s)", (user_id, product_id, quantity))
+
+        conn.commit()
+        flash("Item added to your cart!", "success")
+
+    except Exception as e:
+        flash(f"Error adding item to cart: {e}", "danger")
+
+    finally:
+        cursor.close()
+        conn.close()
+
+    return redirect(url_for('cart'))
+
+
+
+
+
+
+
+    <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../static/css/cart_user.css">
+    <title>Your Cart - FreshMart</title>
+</head>
+<body>
+    <div class="container">
+        <h1>Your Cart</h1>
+
+        {% if unique_items > 0 %}
+            <table border="1" >
+                <thead>
+                    <tr>
+                        <th>Image</th>
+                        <th>Name</th>
+                        <th>Price</th>
+                        <th>Weight (lbs)</th>
+                        <th>Quantity</th>
+                        <th>Total</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in cart_items %}
+                        <tr>
+                            <td>
+                                {% if item.image_url %}
+                                <img src="{{ url_for('static', filename=item.image_url) }}" alt="{{ item.name }}" class="cart-image">
+                                {% else %}
+                                    No Image
+                                {% endif %}
+                            </td>
+                            <td>{{ item.name }}</td>
+                            <td>${{ "%.2f"|format(item.price) }}</td>
+                            <td>{{ "%.2f"|format(item.weight) }}</td>
+                            <td>
+                                <form action="{{ url_for('update_quantity') }}" method="post">
+                                    <input type="hidden" name="cart_id" value="{{ item.cart_id }}">
+                                    <input type="number" name="quantity" value="{{ item.quantity }}" min="1">
+                                    <button type="submit">Update</button>
+                                </form>
+                            </td>
+                            <td>${{ "%.2f"|format(item.price * item.quantity) }}</td>
+                            <td>
+                                <a href="{{ url_for('remove_from_cart', product_id=item.product_id) }}">Remove</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div>
+                <p>Total Items: {{ unique_items }}</p>
+                <p>Total Price: ${{ "%.2f"|format(total_price) }}</p>
+                <p>Total Weight: {{ "%.2f"|format(total_weight) }} lbs</p>
+                {% if delivery_charge > 0 %}
+                    <p>Delivery Charge: ${{ "%.2f"|format(delivery_charge) }}</p>
+                {% else %}
+                    <p>Delivery Charge: Free</p>
+                {% endif %}
+                <p>Final Total: ${{ "%.2f"|format(final_total) }}</p>
+            </div>
+        {% else %}
+            <p>Your cart is currently empty.</p>
+        {% endif %}
+    </div>
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../static/css/checkout.css">
+    <title>Checkout - FreshMart</title>
+    <style>
+
+    </style>
+</head>
+    <body>
+        <h1 style="text-align: center; font-size: 40px;">Checkout Form</h1>
+        <div class="container">
+            <div class="card">
+                <h2>Delivery Address</h2>
+                <form action="{{ url_for('checkout') }}" method="POST">
+                    <input type="text" name="first_name" placeholder="First Name" required>
+                    <input type="text" name="last_name" placeholder="Last Name" required>
+                    <textarea name="street_address" placeholder="Street Address" required></textarea>
+                    <input type="text" name="city" placeholder="City" required>
+                    <input type="text" name="States" placeholder="State" required>
+                    <input type="text" name="zip_code" placeholder="Zip Code" required>
+                    <input type="text" name="phone_number" placeholder="Phone Number" required><br><br>
+    
+                    <h2>Payment</h2>
+                    <div class="icon-container">
+                        <i class="fa fa-cc-visa" style="color:navy;"></i>
+                        <i class="fa fa-cc-amex" style="color:blue;"></i>
+                        <i class="fa fa-cc-mastercard" style="color:red;"></i>
+                        <i class="fa fa-cc-discover" style="color:orange;"></i>
+                    </div>
+                    <input type="text" name="card_number" placeholder="Card Number" required>
+                    <input type="text" name="card_number" placeholder="Re-enter Card Number" required>
+                    <input type="text" name="expiry_date" placeholder="Expiry Date (MM/YY)" required>
+                    <input type="text" name="cvv" placeholder="CVV" required>
+                    <input type="hidden" name="order_summary" value="Tomatoes x 2, Carrots x 1, Total: $25">
+                    <input type="hidden" name="total_price" value="{{ total_price }}">
+                    <input type="hidden" name="delivery_charge" value="{{ delivery_charge }}">
+                    <input type="hidden" name="final_total" value="{{ final_total }}">
+                    <button type="submit" class="btn">Place Order</button>
+                </form>
+                <a href="{{ url_for('cart') }}" class="btn">Back to Cart</a>
+            </div>
+    
+            <!-- Order Summary -->
+            <div class="card">
+                <h2>Order Summary</h2>
+                {% for item in cart_items %}
+                    <div class="order-summary-item">
+                        <img src="{{ item.image_url }}" alt="{{ item.name }}" style="width: 50px;">
+                        <div class="order-summary-details">
+                            <p>{{ item.name }} x {{ item.quantity }}</p>
+                            <p class="order-summary-price">${{ "%.2f"|format(item.price * item.quantity) }}</p>
+                        </div>
+                    </div>
+                {% endfor %}
+                <p class="total-price">Cart Total: ${{ "%.2f"|format(total_price) }}</p>
+                <p class="total-price">Delivery Charge: ${{ "%.2f"|format(delivery_charge) }}</p>
+                <p class="total-price">Final Total: ${{ "%.2f"|format(final_total) }}</p>
+            </div>
+        </div>
+</body>
+</html>
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register</title>
+    <link rel="stylesheet" href="../static/css/register_styles.css">
+   
+</head>
+
+<body>
+    <div class="container">
+        <h1>Register</h1>
+
+        
+        <div id="successAlert" class="alert success"></div>
+
+        <div id="errorAlert" class="alert error">
+            <strong>Error!</strong> Please check your inputs.
+        </div>
+
+        <form id="registerForm" action="/register" method="POST">
+            <label for="name">First Name:</label>
+            <input type="text" id="name" name="name" placeholder="John" required>
+
+            <label for="last_name">Last Name:</label>
+            <input type="text" id="last_name" name="last_name" placeholder="Doe" required>
+
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" placeholder="example@domain.com" required>
+
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" placeholder="********" required>
+
+            <label for="re_password">Re-enter Password:</label>
+            <input type="password" id="re_password" name="re_password" placeholder="********" required>
+            <div id="passwordError" class="error">Passwords do not match</div>
+
+            <div id="passwordStrength" class="error"></div>
+
+            <button type="submit" class="btn">Register</button>
+        </form>
+
+        <div class="link">
+            Already have an account? <a href="/login">Login</a>
+        </div>
+    </div>
+
+    <script>
+        // Get the form and alert elements
+        const form = document.getElementById('registerForm');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const rePasswordInput = document.getElementById('re_password');
+        const passwordError = document.getElementById('passwordError');
+        const passwordStrength = document.getElementById('passwordStrength');
+        const successAlert = document.getElementById('successAlert');
+        const errorAlert = document.getElementById('errorAlert');
+
+        // Email Validation
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+        // Password Strength Check Regex (at least 8 characters, 1 uppercase, 1 number, 1 special character)
+        const passwordStrengthRegex = /^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])[A-Za-z0-9!@#$%^&*]{8,}$/;
+
+        
+        form.addEventListener('submit', function (event) {
+            event.preventDefault(); 
+
+            let valid = true;
+
+            // Validate email format
+            const email = emailInput.value;
+            if (!emailRegex.test(email)) {
+                errorAlert.innerHTML = '<strong>Error!</strong> Invalid email format.';
+                errorAlert.style.display = 'block';
+                valid = false;
+            }
+
+            // Validate password match
+            const password = passwordInput.value;
+            const rePassword = rePasswordInput.value;
+            if (password !== rePassword) {
+                passwordError.style.display = 'block';
+                valid = false;
+            } else {
+                passwordError.style.display = 'none';
+            }
+
+            // Validate password strength
+            if (!passwordStrengthRegex.test(password)) {
+                passwordStrength.textContent = 'Password must contain at least 8 characters, one uppercase letter, one number, and one special character.';
+                passwordStrength.style.display = 'block';
+                valid = false;
+            } else {
+                passwordStrength.style.display = 'none';
+            }
+
+            // If all validations pass, submit the form
+            if (valid) {
+                successAlert.style.display = 'block';
+                errorAlert.style.display = 'none';
+                setTimeout(function () {
+                    form.submit(); 
+                }, 500);
+            }
+        });
+    </script>
+</body>
+
 </html>

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order History - FreshMart</title>
+    <link rel="stylesheet" href="../static/order_history.css">
+ 
+</head>
+<body>
+
+    <header>
+        <div class="header">
+            <a href="{{ url_for('order_history') }}" style="color: #ff9900; text-decoration: none;">
+                <div class="logo" style="font-size: 24px; font-weight: bold;">FreshMart - Employee Profile</div>
+            </a>
+
+
+            <div class="nav">
+                <a href="{{ url_for('portal_employee') }}" style="text-decoration: none; display: flex; align-items: center; color: #ff9900;">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#ff9900" width="24px" height="24px" style="margin-right: 5px;">
+                        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                    </svg>
+                    <span style="color: white;">Portal Employee</span>
+                </a>
+
+                <a href="{{ url_for('orders') }}" style="text-decoration: none; display: flex; align-items: center; color: #ff9900;">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#ff9900" width="24px" height="24px" style="margin-right: 5px;">
+                        <path d="M16 6V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v2H2v2h1v10c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V8h1V6h-2zm-8-2h4v2h-4V4zm8 12H6v-2h10v2zm0-4H6v-2h10v2z"/>
+                    </svg>
+                    <span style="color: white;">View Orders</span>
+                </a>
+
+
+            </div>
+        </div>
+    </header>
+
+
+    <div class="container">
+        <h1>Order History</h1>
+
+        <!-- Search Bar -->
+    <div class="search-bar">
+        <form action="{{ url_for('order_history') }}" method="get">
+            <input type="text" name="search" placeholder="Search by Order ID or Name..." value="{{ search_query }}" >
+            <button type="submit">Search</button>
+        </form>
+    </div>
+
+        <!-- Loop through the order history -->
+        {% for order in orders %}
+        <div class="order-card">
+            <h3>Order ID: {{ order['id'] }}</h3>
+            <div class="order-details">
+                <div>
+                    <strong>Customer Name:</strong> {{ order['first_name'] }} {{ order['last_name'] }}
+                </div>
+                <div>
+                    <strong>Address:</strong> {{ order['street_address'] }}, {{ order['city'] }}, {{ order['zip_code'] }}
+                </div>
+                <div>
+                    <strong>Placed On:</strong> {{ order['placed_date'] }}
+                </div>
+                <div>
+                    <strong>Delivered On:</strong> {{ order['delivered_date'] }}
+                </div>
+            </div>
+            <div class="order-summary">
+                <strong>Order Summary:</strong>
+                <ul>
+                    {% for item in order['order_summary'].split(', ') %}
+                    <li>{{ item }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div class="order-image">
+                <strong>Delivery Image:</strong>
+                {% if order['delivery_image'] %}
+                <img src="{{ url_for('static', filename='delivery_images/' + order['delivery_image']) }}" alt="Delivery Image">
+                {% else %}
+                <p>No image available.</p>
+                {% endif %}
+            </div>
+            <div class="timestamp">
+                Last updated: {{ order['last_updated'] }}
+            </div>
+        </div>
+        {% endfor %}
+
+        <!-- Show message if no orders are found -->
+        {% if not orders %}
+        <p style="text-align: center; color: #777;">No order history available.</p>
+        {% endif %}
+    </div>
+</body>
+</html>

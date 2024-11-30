@@ -1,0 +1,158 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 20px;
+}
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+h1 {
+    text-align: center;
+    color: #ff9900;
+    font-size: 32px;
+}
+.order-card {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+.order-card h3 {
+    margin: 0 0 10px;
+    color: #333;
+}
+.order-card p {
+    margin: 5px 0;
+    color: #666;
+}
+.order-card .actions {
+    margin-top: 10px;
+}
+.order-card button {
+    background-color: #ff9900;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+}
+.order-card button:hover {
+    background-color: #e38c00;
+}
+.upload-box {
+    margin-top: 20px;
+}
+.upload-box input[type="file"] {
+    margin-top: 10px;
+}
+.upload-box button {
+    margin-top: 10px;
+    background-color: #28a745;
+    color: white;
+}
+.upload-box button:hover {
+    background-color: #218838;
+}
+.cancel-btn {
+    background-color: #dc3545;
+}
+.cancel-btn:hover {
+    background-color: #c82333;
+}
+
+/* Header Styles */
+.header {
+    background-color: #232f3e;
+    color: white;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header .logo {
+    font-size: 24px;
+    font-weight: bold;
+    color: #ff9900;
+}
+
+.header .nav {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.header .nav a, .header .nav button {
+    color: white;
+    text-decoration: none;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 15px;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+}
+
+.header .nav a img, .header .nav button img {
+    width: 24px;
+    height: 24px;
+}
+
+.header .nav a:hover, .header .nav button:hover {
+    background-color: #ff9900;
+}
+
+/* Dropdown Menu */
+.dropdown-container {
+    position: relative;
+}
+
+.dropdown {
+    display: none;
+    position: absolute;
+    top: 40px;
+    right: 0;
+    background: white;
+    color: #232f3e;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    overflow: hidden;
+    width: 250px;
+    z-index: 1000;
+}
+
+.dropdown::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    right: 20px;
+    border-width: 10px;
+    border-style: solid;
+    border-color: transparent transparent white transparent;
+}
+
+.dropdown p {
+    margin: 10px 20px;
+    font-size: 14px;
+}
+
+.dropdown p span {
+    font-weight: bold;
+}
+
+.dropdown-container:hover .dropdown {
+    display: block;
+}

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../static/css/cart_user.css">
+    <title>Your Cart - FreshMart</title>
+
+</head>
+<body>
+
+    <header>
+        <!-- Header -->
+    <div class="header">
+        <a href="{{ url_for('cart') }}" style="color: #ff9900; text-decoration: none;">
+            <div class="logo" style="font-size: 24px; font-weight: bold;">FreshMart Checkout</div>
+        </a>
+
+        <div class="nav">
+            <a href="{{ url_for('home') }}" style="text-decoration: none; display: flex; align-items: center; color: #ff9900;">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#ff9900" width="24px" height="24px" style="margin-right: 5px;">
+                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                </svg>
+                <span style="color: white;">Home</span>
+            </a>
+        </div>
+    </div>
+    </header>
+    
+    <div class="container">
+        <h1>Your Cart</h1>
+
+        {% if unique_items > 0 %}
+            <table class="cart-table">
+                <thead>
+                    <tr>
+                        <th>Image</th>
+                        <th>Name</th>
+                        <th>Price</th>
+                        <th>Weight (lbs)</th>
+                        <th>Quantity</th>
+                        <th>Total</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in cart_items %}
+                        <tr>
+                            <td>
+                                {% if item.image_url %}
+                                <img src="{{ url_for('static', filename=item.image_url) }}" alt="{{ item.name }}" class="cart-image">
+                                {% else %}
+                                    No Image
+                                {% endif %}
+                            </td>
+                            <td>{{ item.name }}</td>
+                            <td>${{ "%.2f"|format(item.price) }}</td>
+                            <td>{{ "%.2f"|format(item.weight) }}</td>
+
+                            <td class="quantity-adjuster">
+                                <form action="{{ url_for('update_quantity') }}" method="post" style="display: inline;">
+                                    <input type="hidden" name="cart_id" value="{{ item.cart_id }}">
+                                    <input type="number" name="quantity" value="{{ item.quantity }}" min="1">
+                                    <button type="submit">Update</button>
+                                </form>
+                            </td>
+
+                            <td>${{ "%.2f"|format(item.price * item.quantity) }}</td>
+                            <td>
+                                <a href="{{ url_for('remove_from_cart', product_id=item.product_id) }}" class="remove-btn" style="text-decoration: none;">Remove</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="cart-summary">
+                <p>Total Items: <span>{{ unique_items }}</span></p>
+                <p>Total Weight: <span>{{ "%.2f"|format(total_weight) }} lbs</span></p>
+                <p>Total Price: <span>${{ "%.2f"|format(total_price) }}</span></p>
+                {% if delivery_charge > 0 %}
+                <p>Delivery Charge: <span> ${{ "%.2f"|format(delivery_charge) }} </span></p>
+                {% else %}
+                    <p>Delivery Charge: <span>Free</span></p>
+                {% endif %}
+                <p>Final Total: <span>${{ "%.2f"|format(final_total) }}</span></p>
+            </div>
+
+            <a href="{{ url_for('checkout') }}" class="checkout-btn">Proceed to Checkout</a>
+
+        {% else %}
+            <p class="empty-cart">Your cart is currently empty.</p>
+            <a href="{{ url_for('home') }}" class="back-home-btn">Back to Home</a>
+        {% endif %}
+    </div>
+</body>
+</html>
+

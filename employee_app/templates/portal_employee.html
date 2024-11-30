@@ -12,7 +12,7 @@
     <!-- Header -->
     <div class="header">
         <a href="{{ url_for('portal_employee') }}" style="color: #ff9900; text-decoration: none;">
-            <div class="logo" style="font-size: 24px; font-weight: bold;">FreshMart Employee</div>
+            <div class="logo" style="font-size: 24px; font-weight: bold;">FreshMart - Employee Portal</div>
         </a>
         
         <div class="nav">
@@ -48,7 +48,7 @@
         <div class="cards-container" style="display: flex; gap: 20px; justify-content: center; margin-top: 20px;">
             <!-- Manage Orders Card -->
             <div class="card">
-                <a href="{{ url_for('portal_employee') }}" style="text-decoration: none">
+                <a href="{{ url_for('orders') }}" style="text-decoration: none">
                     <img src="https://cdn-icons-png.flaticon.com/512/2910/2910818.png" alt="Orders">
                     <h2>Manage Orders</h2>
                     <p>Track and update customer orders.</p>
@@ -57,7 +57,7 @@
 
             <!-- Order History Card -->
             <div class="card">
-                <a href="{{ url_for('portal_employee') }}" style="text-decoration: none">
+                <a href="{{ url_for('order_history') }}" style="text-decoration: none">
                     <img src="https://cdn-icons-png.flaticon.com/512/685/685352.png" alt="Order History">
                     <h2>Order History</h2>
                     <p>View and manage customer order history.</p>
@@ -75,7 +75,7 @@
 
             <!-- Customer Support Card -->
             <div class="card">
-                <a href="{{ url_for('portal_employee') }}" style="text-decoration: none">
+                <a href="{{ url_for('customer_support') }}" style="text-decoration: none">
                     <img src="https://cdn-icons-png.flaticon.com/512/2354/2354300.png" alt="Support">
                     <h2>Customer Support</h2>
                     <p>Assist customers with their queries.</p>
@@ -84,7 +84,7 @@
 
             <!-- Employee Profile Card -->
             <div class="card">
-                <a href="{{ url_for('portal_employee') }}" style="text-decoration: none">
+                <a href="{{ url_for('employee_profiles') }}" style="text-decoration: none">
                     <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Employee Information">
                     <h2>Employee Information</h2>
                     <p>Manage employee profiles and roles.</p>
@@ -93,7 +93,7 @@
 
             <!-- Token Management Card -->
             <div class="card">
-                <a href="{{ url_for('portal_employee') }}" style="text-decoration: none">
+                <a href="{{ url_for('add_product') }}" style="text-decoration: none">
                     <img src="https://cdn-icons-png.flaticon.com/512/3064/3064163.png" alt="Token">
                     <h2>Manage Tokens</h2>
                     <p>Generate and manage employee tokens.</p>
@@ -102,7 +102,7 @@
 
             <!-- Label Management Card -->
             <div class="card">
-                <a href="{{ url_for('portal_employee') }}" style="text-decoration: none">
+                <a href="{{ url_for('labels') }}" style="text-decoration: none">
                     <img src="https://cdn-icons-png.flaticon.com/512/4320/4320334.png" alt="Label Icon">
                     <h2>Manage Labels</h2>
                     <p>Create and customize delivery labels.</p>

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../static/css/feedback_user.css">
+    <title>Submit Your Feedback</title>
+    <script>
+        // Show alert based on Flask success/error variable
+        {% if success %}
+            alert("Your feedback was successfully submitted!");
+            window.location.href = "{{ url_for('home') }}";  // Redirect to the home page
+        {% elif error %}
+            alert("An error occurred while submitting your feedback. Please try again.");
+        {% endif %}
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>We Value Your Feedback</h1>
+        <form action="{{ url_for('submit_feedback') }}" method="POST">
+            <label for="name">Your Name</label>
+            <input type="text" id="name" name="name" placeholder="Enter your name" required>
+            <div class="tooltip">Please enter your full name.</div>
+
+            <label for="email">Your Email</label>
+            <input type="email" id="email" name="email" placeholder="Enter your email" required>
+            <div class="tooltip">We'll use this email to get back to you if needed.</div>
+
+            <label for="feedback">Your Feedback</label>
+            <textarea id="feedback" name="feedback" placeholder="Write your feedback here..." required></textarea>
+            <div class="tooltip">Tell us what you think about our services.</div>
+
+            <button type="submit">Submit Feedback</button>
+            <p class="note">Thank you for helping us improve!</p>
+        </form>
+    </div>
+</body>
+</html>
+

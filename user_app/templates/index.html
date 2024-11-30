@@ -6,11 +6,14 @@
     <title>FreshMart - Products</title>
     <link rel="stylesheet" href="../static/css/index.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <!--This part of the code is to display an alert to the user that they must register or login before bying a product-->
     <script>
         function showAlert() {
             alert("Please register or log in to add products to your cart.");
         }
     </script>
+
 </head>
 <body>
     <!-- Header -->
@@ -36,7 +39,7 @@
 
              <!-- Search Input -->
             <div class="search-bar">
-                <form action="{{ url_for('index') }}" method="GET" class="gform">
+                <form action="{{ url_for('index') }}" method="GET" class="gform, searchform">
                     <div class="search-bar">
                         <input type="text" name="search" placeholder="Search products..." value="{{ request.args.get('search', '') }}">
                         <button type="submit">Search</button>
@@ -65,24 +68,22 @@
             <p>Your one-stop shop for fresh and organic groceries.</p>
             <div class="products">
                 {% for product in products %}
-                    <div class="product-card">
-
-                        <img src="{{ url_for('static', filename=product['image_url'] if product['image_url'] else 'images/default.png') }}" alt="{{ product['name'] }}">
-                        <h3>{{ product['name'] }}</h3>
-                        <p>Price: ${{ product['price'] }}</p>
-                        <p>Weight: {{ product['weight'] }} Lbs</p>
-                        <p>Available Quantity: {{ product['quantity'] }}</p>
-                        
-                        {% if product['quantity'] > 0 %}
-                        <form method="POST" action="{{ url_for('add_to_cart', product_id=product['id']) }}">
-                            <input type="number" id="quantity-{{ product.id }}" name="quantity" value="1" min="1" max="{{ product.quantity }}" require />
-                            <button type="submit" class="btn btn-primary">Add to Cart</button>
-                        </form>
-                        {% else %}
-                            <p class="out-of-stock">Out of Stock</p>
-                        {% endif %}
-                    </div>
-                {% endfor %}
+                <div class="product-card">
+                    <img src="{{ url_for('static', filename=product['image_url']) }}" alt="{{ product['name'] }}">
+                    <h3>{{ product['name'] }}</h3>
+                    <p>Price: ${{ product['price'] }}</p>
+                    <p>Weight: {{ product['weight'] }} Lbs</p>
+                    <p>Available Quantity: {{ product['quantity'] }}</p>
+            
+                    {% if product['quantity'] > 0 %}
+                            <!-- If the user is not logged in, show the alert -->
+                            <input type="number" id="quantity-{{ product.id }}" name="quantity" value="1" min="1" max="{{ product.quantity }}" required />
+                            <button class="btn btn-primary" onclick="showAlert()">Add to Cart</button>
+                    {% else %}
+                        <p style="color: blue;" class="out-of-stock">Out of Stock</p>
+                    {% endif %}
+                </div>
+            {% endfor %}
             </div>
         </div>
     </main>

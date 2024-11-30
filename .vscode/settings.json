@@ -1,0 +1,8 @@
+{
+    "git.untrackedChanges": "hidden",
+    "editor.dropIntoEditor.enabled": true,
+    "editor.inlayHints.enabled": "on",
+    "editor.stickyScroll.scrollWithEditor": true,
+    "git.enabled": false,
+    "git.enableCommitSigning": false
+}

@@ -17,10 +17,21 @@
     align-items: center;
 }
 
+form {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 0px;
+    display: flex; width: 100%;
+}
+
 .header .logo {
     font-size: 24px;
     font-weight: bold;
     color: #ff9900;
+}
+
+a:hover .logo {
+    color: #905c08; /* Change color on hover */
 }
 
 .header .nav {

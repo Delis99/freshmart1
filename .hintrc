@@ -6,7 +6,8 @@
     "axe/forms": [
       "default",
       {
-        "label": "off"
+        "label": "off",
+        "select-name": "off"
       }
     ],
     "axe/structure": [
@@ -21,6 +22,7 @@
       {
         "duplicate-id-active": "off"
       }
-    ]
+    ],
+    "button-type": "off"
   }
 }

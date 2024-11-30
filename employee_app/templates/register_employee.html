@@ -10,32 +10,25 @@
     <div class="container">
         <h1>Register as Employee</h1>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <div class="alerts">
-                    {% for category, message in messages %}
-                        <div class="alert {{ category }}">{{ message }}</div>
-                    {% endfor %}
-                </div>
-            {% endif %}
-        {% endwith %}
-
-        <form action="/register" method="POST">
-            <label for="name">First Name:</label>
-            <input type="text" id="name" name="name" placeholder="John" required>
-
+        <form id="registrationForm" action="/register" method="POST">
+            <label for="first_name">First Name:</label>
+            <input type="text" id="first_name" name="first_name" placeholder="John" required>
+        
             <label for="last_name">Last Name:</label>
             <input type="text" id="last_name" name="last_name" placeholder="Doe" required>
-
+        
             <label for="email">Email:</label>
             <input type="email" id="email" name="email" placeholder="example@domain.com" required>
-
+        
             <label for="password">Password:</label>
             <input type="password" id="password" name="password" placeholder="********" required>
-
+        
             <label for="re_password">Re-enter Password:</label>
             <input type="password" id="re_password" name="re_password" placeholder="********" required>
 
+            <label for="contact">Phone Number:</label>
+            <input type="text" id="contact" name="contact" placeholder="564-676-1234" required>
+        
             <button type="submit" class="btn">Register</button>
         </form>
 
@@ -43,5 +36,92 @@
             Already have an account? <a href="/login">Login</a>
         </div>
     </div>
+
+    <script>
+        // Mock function to simulate email existence check
+        async function isEmailAlreadyExists(email) {
+            // Simulate a server-side email existence check with a mock API
+            const existingEmails = ['test@example.com', 'user@domain.com']; // Example of existing emails
+            return existingEmails.includes(email);
+        }
+    
+        // Real-time phone number formatting
+        document.getElementById('contact').addEventListener('input', function (event) {
+            let input = event.target.value.replace(/\D/g, ''); // Remove all non-numeric characters
+            if (input.length > 10) input = input.slice(0, 10); // Limit to 10 digits
+    
+            // Format the input as (XXX)-XXX-XXXX
+            if (input.length > 6) {
+                input = `(${input.slice(0, 3)})-${input.slice(3, 6)}-${input.slice(6)}`;
+            } else if (input.length > 3) {
+                input = `(${input.slice(0, 3)})-${input.slice(3)}`;
+            } else if (input.length > 0) {
+                input = `(${input}`;
+            }
+    
+            event.target.value = input; // Set the formatted value back to the input field
+        });
+    
+        // Form validation and submission logic
+        document.getElementById('registrationForm').addEventListener('submit', async function (event) {
+            // Prevent form submission
+            event.preventDefault();
+    
+            // Get form values
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const rePassword = document.getElementById('re_password').value;
+            const phoneNumber = document.getElementById('contact').value.replace(/\D/g, ''); // Remove formatting for validation
+    
+            // Email validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                alert('Please enter a valid email address.');
+                return;
+            }
+    
+            // Check if email already exists via AJAX
+            const emailCheck = await fetch('/check_email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            const emailResponse = await emailCheck.json();
+            if (emailResponse.exists) {
+                alert('Email already exists. Please use a different email.');
+                return;
+            }
+    
+            // Phone number validation
+            if (phoneNumber.length !== 10) {
+                alert('Phone number must be exactly 10 digits.');
+                return;
+            }
+    
+            // Password length validation
+            if (password.length < 8) {
+                alert('Password must be at least 8 characters long.');
+                return;
+            }
+    
+            // Password special character validation
+            const specialCharRegex = /[!@#$%^&*(),.?":{}|<>]/;
+            if (!specialCharRegex.test(password)) {
+                alert('Password must contain at least one special character.');
+                return;
+            }
+    
+            // Password match validation
+            if (password !== rePassword) {
+                alert('Passwords do not match. Please re-enter your passwords.');
+                return;
+            }
+    
+            // Success alert and submit the form
+            alert('Registration successful! Welcome aboard!');
+            this.submit();
+        });
+    </script>
+    
 </body>
 </html>

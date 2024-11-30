@@ -5,6 +5,13 @@ body {
     padding: 0;
 }
 
+form {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 0px;
+    display: flex; width: 100%;
+}
+
 .header .logo {
     font-size: 24px;
     font-weight: bold;
@@ -12,7 +19,7 @@ body {
 }
 
 a:hover .logo {
-    color: #e38c00; /* Change color on hover */
+    color: #905c08; /* Change color on hover */
 }
 
 .container {

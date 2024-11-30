@@ -3,173 +3,140 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home - FreshMart</title>
+    <title>FreshMart - Products</title>
     <link rel="stylesheet" href="../static/css/home.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
+    <!-- Header -->
+    <div class="header">
+        
+            <a href="{{ url_for('home') }}" style="color: #ff9900; text-decoration: none;">
+                <div class="logo" style="font-size: 24px; font-weight: bold;">FreshMart</div>
+            </a>
 
-<!-- Header -->
-<div class="header">
-
-    <a href="{{ url_for('home') }}" style="color: #ff9900; text-decoration: none;">
-        <div class="logo" style="font-size: 24px; font-weight: bold;">FreshMart</div>
-    </a>
-    
-    <!-- Contact Dropdown -->
-     <div class="nav">
-    <div class="dropdown-container">
-    
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    
-        <a href="#" style="text-decoration: none; display: flex; align-items: center; color: #ff9900;">
-            <i class="fas fa-phone-alt" style="margin-right: 8px; font-size: 24px;"></i>
-            <span style="color: white">Contact Us</span>
-        </a>
-    
-        <div class="dropdown">
-            <p><span>Phone:</span> +1-800-555-1234</p>
-            <p><span>Email:</span> support@freshmart.com</p>
-            <p><span>Hours:</span> Mon-Fri, 9 AM - 6 PM</p>
-            <a href="customer_support_form.html" class="logout-btn">Feedback</a>
-        </div>
-        </div>
-    </div>
-    
-    
-    <div class=" ">
-    <input type="text" id="search-input" placeholder="Search for products...">
-    <button onclick="searchProduct()">Search</button>
-    </div>
-    
-    <!-- Profile Dropdown -->
-    <div class="nav">
-    <div class="dropdown-container">
-    
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    
-        <a href="#" style="text-decoration: none; display: flex; align-items: center; color: #ff9900;">
-            <i class="fas fa-user-circle" style="margin-right: 8px; font-size: 24px;"></i>
-            <div style="color: white">
-                {{ name }}
-            </div>
-        </a>
-    
-        <div class="dropdown">
-            <p><span>Name:</span> {{ name }} {{ last_name }}</p>
-            <p><span>Email:</span> {{ email }}</p>
-            <p><span>Contact:</span> {{ contact }}</p>
-            <a href="index.php" class="logout-btn">Logout</a>
-        </div>
-    </div>
-    
-    <!-- Cart Dropdown -->
-    <div class="cart-dropdown-container">
-        <a href="cart.php">
-            <img src="https://cdn-icons-png.flaticon.com/512/1170/1170576.png" alt="Cart Icon">
-            <span class="cart-count">{{ cart_count }}</span>
-        </a>
-    <div class="cart-dropdown">
-        <div class="cart-header">Your Cart</div>
-        {% if cart_count > -1 %}
-            {% for item in cart_items %}
-                <div class="cart-item">
-                    <div>
-                        <p class="item-name">{{ item.name }}</p>
-                        <p class="item-quantity">Qty: {{ item.quantity }}</p>
+            <!-- Contact Dropdown -->
+            <div class="nav">
+                <div class="dropdown-container">
+                    <a href="#" style="text-decoration: none; display: flex; align-items: center; color: #ff9900;">
+                        <i class="fas fa-phone-alt" style="margin-right: 8px; font-size: 24px;"></i>
+                        <span style="color: white">Contact Us</span>
+                    </a>
+                    <div class="dropdown">
+                        <p><span>Phone:</span> +1-800-555-1234</p>
+                        <p><span>Email:</span> support@freshmart.com</p>
+                        <p><span>Hours:</span> Mon-Fri, 9 AM - 6 PM</p>
+                        <a href="{{ url_for('submit_feedback') }}" class="logout-btn" style="text-align: center;">Give Feedback</a>
                     </div>
-                    <p class="item-price">${{ "%.2f" | format(item.quantity * item.price) }}</p>
                 </div>
-            {% endfor %}
-            <div class="cart-footer">
-                Total: <span>${{ "%.2f" | format(total_cost) }}</span>
             </div>
-            <a href="/cart" class="checkout-btn">Go to Cart</a>
-        {% else %}
-            <div style="padding: 20px; text-align: center;">Your cart is empty.</div>
-        {% endif %}
-    </div>
-</div>
 
-    
-    <!-- Notification Dropdown -->
-    <div class="dropdown-container">
-        <a href="#" style="text-decoration: none; display: flex; align-items: center; color: #ff9900;">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="#ff9900" width="24px" height="24px" viewBox="0 0 24 24" style="margin-right: 5px; animation: pulse 1s infinite;">
-                <path d="M12 22c1.1 0 1.99-.9 1.99-2H10c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5S11 3.17 11 4v.68C8.13 5.36 6.5 7.92 6.5 11v5l-1.7 1.7c-.29.29-.3.77-.01 1.06.29.29.77.29 1.06 0L7 17h10l1.15 1.76c.29.29.77.29 1.06 0 .29-.29.29-.77 0-1.06L18 16zM4 18h16v-2H4v2z"></path>
-            </svg>
-            <span style="color: white">Notifications</span>
-        </a>
-        <div class="dropdown">
-            <div style="text-align: center;" class="cart-header">Notifications</div>
-            <div style="padding: 10px; font-size: 14px;">
-                <p>Your order #1234 is ready for delivery.</p>
-                <p>Your order #1235 is on the way!</p>
-                <p>Your order #1236 has been delivered.</p>
+            <!-- Search Input -->
+            <div class="search-bar">
+                <form action="{{ url_for('home') }}" method="GET" class="gform, searchform">
+                    <div class="search-bar">
+                        <input type="text" name="search" placeholder="Search products..." value="{{ request.args.get('search', '') }}">
+                        <button type="submit">Search</button>
+                    </div>
+                </form>
             </div>
-            <a href="" class="checkout-btn">View All</a>
+
+            <!-- Profile Dropdown -->
+            <div class="nav">
+                <div class="dropdown-container">
+                    <a href="#" style="text-decoration: none; display: flex; align-items: center; color: #ff9900;">
+                        <i class="fas fa-user-circle" style="margin-right: 8px; font-size: 24px;"></i>
+                        <div style="color: white">
+                            {{ name }}
+                        </div>
+                    </a>
+                    <div class="dropdown">
+                        <p><span>Name:</span> {{ name }} {{ last_name }}</p>
+                        <p><span>Email:</span> {{ email }}</p>
+                        <p><span>Contact:</span> {{ contact }}</p>
+                        <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+                    </div>
+                </div>
+
+                <!-- Cart Dropdown -->
+                <div class="cart-dropdown-container">
+                    <a href="{{ url_for('cart') }}">
+                        <img src="https://cdn-icons-png.flaticon.com/512/1170/1170576.png" alt="Cart Icon">
+                        <span class="cart-count">{{ cart_count }}</span>
+                    </a>
+                    <div class="cart-dropdown">
+                        <div class="cart-header">Your Cart</div>
+                        {% if cart_count > 0 %}
+                            {% for item in cart_items %}
+                                <div class="cart-item">
+                                    <div>
+                                        <p class="item-name">{{ item.name }}</p>
+                                        <p class="item-quantity">Qty: {{ item.quantity }}</p>
+                                    </div>
+                                    <p class="item-price">${{ (item.quantity * item.price) | round(2) }}</p>
+                                </div>
+                            {% endfor %}
+                            <div class="cart-footer">
+                                Total: <span>${{ total_cost | round(2) }}</span>
+                            </div>
+                            <a href="{{ url_for('cart') }}" class="logout-btn">Go to Cart</a>
+                        {% else %}
+                            <div style="padding: 20px; text-align: center;">Your cart is empty.</div>
+                        {% endif %}
+                    </div>
+                </div> 
+
+                <!-- Notification Dropdown -->
+                <div class="dropdown-container">
+                    <a href="#" style="text-decoration: none; display: flex; align-items: center; color: #ff9900;">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="#ff9900" width="24px" height="24px" viewBox="0 0 24 24" style="margin-right: 5px; animation: pulse 1s infinite;">
+                            <path d="M12 22c1.1 0 1.99-.9 1.99-2H10c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5S11 3.17 11 4v.68C8.13 5.36 6.5 7.92 6.5 11v5l-1.7 1.7c-.29.29-.3.77-.01 1.06.29.29.77.29 1.06 0L7 17h10l1.15 1.76c.29.29.77.29 1.06 0 .29-.29.29-.77 0-1.06L18 16zM4 18h16v-2H4v2z"></path>
+                        </svg>
+                        <span style="color: white">Notifications</span>
+                    </a>
+                    <div class="dropdown">
+                        <div style="text-align: center;" class="cart-header">Notifications</div>
+                        <div style="padding: 10px; font-size: 14px;">
+                            <p>Your order #1234 is ready for delivery.</p>
+                            <p>Your order #1235 is on the way!</p>
+                            <p>Your order #1236 has been delivered.</p>
+                        </div>
+                            <a href="" class="logout-btn">View All</a>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
-    </div>
-    </div>
 
-    <div class="content">
-        <h1 style="text-align: center;">Welcome, {{ name }}!</h1>
-        <div class="products">
-            {% for product in products %}
-            <div class="product-card">
-                <img src="{{ product.image_path }}" alt="Product Image">
-                <h3>{{ product.name }}</h3>
-                <p>Price: ${{ product.price }}</p>
-                <p>Weight: {{ product.weight }} lbs</p>
-                <p>Stock: {{ product.quantity }}</p>
-                <input type="number" id="quantity-{{ product.id }}" value="1" min="1" max="{{ product.quantity }}" />
-                <button onclick="addToCart({ product.id }, document.getElementById('quantity-{{ product.id }}').value)">Add to Cart</button>
+
+
+
+    <!-- Main Content -->
+    <main>
+        <div class="content">
+            <h1>Welcome to FreshMart {{ name }}!</h1>
+            <div class="products">
+                {% for product in products %}
+                    <div class="product-card">
+                        <img src="{{ url_for('static', filename=product['image_url']) }}" alt="{{ product['name'] }}">
+                        <h3>{{ product['name'] }}</h3>
+                        <p>Price: ${{ product['price'] }}</p>
+                        <p>Weight: {{ product['weight'] }} Lbs</p>
+                        <p>Available Quantity: {{ product['quantity'] }}</p>
+                        
+                        {% if product['quantity'] > 0 %}
+                        <form method="POST" action="{{ url_for('add_to_cart', product_id=product['id']) }}">
+                            <input type="number" id="quantity-{{ product.id }}" name="quantity" value="1" min="1" max="{{ product.quantity }}" required />
+                            <button type="submit" class="btn btn-primary">Add to Cart</button>
+                        </form>
+                        {% else %}
+                            <p style="color: blue;" class="out-of-stock">Out of Stock</p>
+                        {% endif %}
+                    </div>
+                {% endfor %}
             </div>
-            {% endfor %}
         </div>
-    </div>
-    <script>
-        function addToCart(itemId, quantity) {
-            if (quantity < 1) {
-                alert("Please enter a valid quantity.");
-                return;
-            }
-
-            fetch('add_to_cart.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ item_id: itemId, quantity: quantity }),
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert(data.message);
-                    location.reload(); 
-                } else {
-                    alert("Error: " + data.message);
-                }
-            })
-            .catch(error => console.error('Error:', error));
-        }
-
-        function searchProduct() {
-            const query = document.getElementById('search-input').value.toLowerCase();
-            const products = document.querySelectorAll('.product-card');
-
-            products.forEach(product => {
-                const name = product.querySelector('h3').textContent.toLowerCase();
-                if (name.includes(query)) {
-                    product.style.display = 'block';
-                } else {
-                    product.style.display = 'none';
-                }
-            });
-        }
-    </script>
+    </main>
 </body>
 </html>
-
 
 

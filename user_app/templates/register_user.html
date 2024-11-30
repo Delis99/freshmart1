@@ -3,41 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register</title>
+    <title>User Registration</title>
     <link rel="stylesheet" href="../static/css/register_styles.css">
-   
 </head>
-
 <body>
     <div class="container">
-        <h1>Register</h1>
+        <h1>Register as User</h1>
 
+        <form id="registrationForm" action="/register" method="POST">
+            <label for="first_name">First Name:</label>
+            <input type="text" id="first_name" name="first_name" placeholder="John" required>
         
-        <div id="successAlert" class="alert success"></div>
-
-        <div id="errorAlert" class="alert error">
-            <strong>Error!</strong> Please check your inputs.
-        </div>
-
-        <form id="registerForm" action="/register" method="POST">
-            <label for="name">First Name:</label>
-            <input type="text" id="name" name="name" placeholder="John" required>
-
             <label for="last_name">Last Name:</label>
             <input type="text" id="last_name" name="last_name" placeholder="Doe" required>
-
+        
             <label for="email">Email:</label>
             <input type="email" id="email" name="email" placeholder="example@domain.com" required>
-
+        
             <label for="password">Password:</label>
             <input type="password" id="password" name="password" placeholder="********" required>
-
+        
             <label for="re_password">Re-enter Password:</label>
             <input type="password" id="re_password" name="re_password" placeholder="********" required>
-            <div id="passwordError" class="error">Passwords do not match</div>
 
-            <div id="passwordStrength" class="error"></div>
-
+            <label for="contact">Phone Number:</label>
+            <input type="text" id="contact" name="contact" placeholder="564-676-1234" required>
+        
             <button type="submit" class="btn">Register</button>
         </form>
 
@@ -47,65 +38,79 @@
     </div>
 
     <script>
-        // Get the form and alert elements
-        const form = document.getElementById('registerForm');
-        const emailInput = document.getElementById('email');
-        const passwordInput = document.getElementById('password');
-        const rePasswordInput = document.getElementById('re_password');
-        const passwordError = document.getElementById('passwordError');
-        const passwordStrength = document.getElementById('passwordStrength');
-        const successAlert = document.getElementById('successAlert');
-        const errorAlert = document.getElementById('errorAlert');
-
-        // Email Validation
-        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-
-        // Password Strength Check Regex (at least 8 characters, 1 uppercase, 1 number, 1 special character)
-        const passwordStrengthRegex = /^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])[A-Za-z0-9!@#$%^&*]{8,}$/;
-
-        
-        form.addEventListener('submit', function (event) {
-            event.preventDefault(); 
-
-            let valid = true;
-
+        // Format the phone number automatically as the user types
+        document.getElementById('contact').addEventListener('input', function (event) {
+            let input = event.target.value.replace(/\D/g, ''); // Remove all non-numeric characters
+            if (input.length > 10) input = input.slice(0, 10); // Limit to 10 digits
+    
+            // Format the input as (XXX)-XXX-XXXX
+            if (input.length > 6) {
+                input = `(${input.slice(0, 3)})-${input.slice(3, 6)}-${input.slice(6)}`;
+            } else if (input.length > 3) {
+                input = `(${input.slice(0, 3)})-${input.slice(3)}`;
+            } else if (input.length > 0) {
+                input = `(${input}`;
+            }
+    
+            event.target.value = input; // Set the formatted value back to the input field
+        });
+    
+        // Form validation and email existence check
+        document.getElementById('registrationForm').addEventListener('submit', async function (event) {
+            event.preventDefault();
+    
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const rePassword = document.getElementById('re_password').value;
+            const phoneNumber = document.getElementById('contact').value.replace(/\D/g, ''); // Remove formatting
+    
             // Validate email format
-            const email = emailInput.value;
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(email)) {
-                errorAlert.innerHTML = '<strong>Error!</strong> Invalid email format.';
-                errorAlert.style.display = 'block';
-                valid = false;
+                alert('Please enter a valid email address.');
+                return;
             }
-
-            // Validate password match
-            const password = passwordInput.value;
-            const rePassword = rePasswordInput.value;
+    
+            // Check if email already exists via AJAX
+            const emailCheck = await fetch('/check_email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            const emailResponse = await emailCheck.json();
+            if (emailResponse.exists) {
+                alert('Email already exists. Please use a different email.');
+                return;
+            }
+    
+            // Validate phone number format (must be exactly 10 digits)
+            if (phoneNumber.length !== 10) {
+                alert('Phone number must be exactly 10 digits.');
+                return;
+            }
+    
+            // Password validations
+            if (password.length < 8) {
+                alert('Password must be at least 8 characters long.');
+                return;
+            }
+    
+            const specialCharRegex = /[!@#$%^&*(),.?":{}|<>]/;
+            if (!specialCharRegex.test(password)) {
+                alert('Password must contain at least one special character.');
+                return;
+            }
+    
             if (password !== rePassword) {
-                passwordError.style.display = 'block';
-                valid = false;
-            } else {
-                passwordError.style.display = 'none';
+                alert('Passwords do not match. Please re-enter your passwords.');
+                return;
             }
-
-            // Validate password strength
-            if (!passwordStrengthRegex.test(password)) {
-                passwordStrength.textContent = 'Password must contain at least 8 characters, one uppercase letter, one number, and one special character.';
-                passwordStrength.style.display = 'block';
-                valid = false;
-            } else {
-                passwordStrength.style.display = 'none';
-            }
-
-            // If all validations pass, submit the form
-            if (valid) {
-                successAlert.style.display = 'block';
-                errorAlert.style.display = 'none';
-                setTimeout(function () {
-                    form.submit(); 
-                }, 500);
-            }
+    
+            // Submit the form
+            alert('Registration successful!');
+            this.submit();
         });
     </script>
+    
 </body>
-
 </html>

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../static/labels.css">
+    <title>Order Labels</title>
+    <script>
+        function printLabel(orderId) {
+            const labelElement = document.getElementById(`label_${orderId}`);
+
+            if (labelElement) {
+                // Hide all other labels except the one to print
+                const allLabels = document.querySelectorAll('.label-container');
+                allLabels.forEach(label => {
+                    if (label !== labelElement) {
+                        label.style.display = 'none';
+                    }
+                });
+
+                // Trigger print
+                window.print();
+
+                // Restore the visibility of all labels after printing
+                allLabels.forEach(label => {
+                    label.style.display = 'block';
+                });
+            } else {
+                alert("Label not found!");
+            }
+        }
+    </script>
+</head>
+<body>
+    <header>
+        <div class="header">
+            <a href="{{ url_for('labels') }}" style="color: #ff9900; text-decoration: none;">
+                <div class="logo" style="font-size: 24px; font-weight: bold;">FreshMart - Employee Profile</div>
+            </a>
+
+
+            <div class="nav">
+                <a href="{{ url_for('portal_employee') }}" style="text-decoration: none; display: flex; align-items: center; color: #ff9900;">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#ff9900" width="24px" height="24px" style="margin-right: 5px;">
+                        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                    </svg>
+                    <span style="color: white;">Portal Employee</span>
+                </a>
+
+                <a href="{{ url_for('orders') }}" style="text-decoration: none; display: flex; align-items: center; color: #ff9900;">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#ff9900" width="24px" height="24px" style="margin-right: 5px;">
+                        <path d="M16 6V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v2H2v2h1v10c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V8h1V6h-2zm-8-2h4v2h-4V4zm8 12H6v-2h10v2zm0-4H6v-2h10v2z"/>
+                    </svg>
+                    <span style="color: white;">View Orders</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <h1>Order Labels</h1>
+
+    <!-- Search Bar -->
+    <div class="search-bar">
+        <form action="{{ url_for('labels') }}" method="get">
+            <input type="text" name="search" placeholder="Search by Order ID..." >
+            <button type="submit">Search</button>
+        </form>
+    </div>
+
+    {% for order in orders %}
+    <div class="label-container" id="label_{{ order.id }}">
+        <div class="label-header">
+            <h2>FreshMart Order Label</h2>
+        </div>
+
+        <div class="label-body">
+            <div class="label-row">
+                <strong>Order ID:</strong>
+                <span>{{ order.id }}</span>
+            </div>
+            <div class="label-row">
+                <strong>Customer:</strong>
+                <span>{{ order.first_name }} {{ order.last_name }}</span>
+            </div>
+            <div class="label-row">
+                <strong>Address:</strong>
+                <span>{{ order.street_address }}, {{ order.city }}, {{ order.zip_code }}</span>
+            </div>
+            <div class="label-row">
+                <strong>Phone:</strong>
+                <span>{{ order.phone_number }}</span>
+            </div>
+        </div>
+
+        <div class="order-summary">
+            <h3>Order Summary</h3>
+            <p>{{ order.order_summary }}</p>
+        </div>
+
+        <button class="print-button" onclick="printLabel('{{ order.id }}')">Print Label</button>
+    </div>
+    {% endfor %}
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

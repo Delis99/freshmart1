@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../static/orders.css">
+    <title>Manage Orders</title>
+  
+    
+
+<script>
+
+function markOrderReady(orderId) {
+            if (confirm("Are you sure you want to mark this order as Ready for Delivery?")) {
+                fetch('/mark_ready_for_delivery', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ order_id: orderId }),
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("Failed to update order status.");
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    alert(data.message);
+                    location.reload(); // Reload the page to reflect changes
+                })
+                .catch(error => {
+                    console.error("Error:", error);
+                    alert("An error occurred. Please try again.");
+                });
+            }
+        }
+
+</script>
+</head>
+<body>
+
+
+    <header>
+        <!-- Header -->
+    <div class="header">
+        <a href="{{ url_for('orders') }}" style="color: #ff9900; text-decoration: none;">
+            <div class="logo" style="font-size: 24px; font-weight: bold;">FreshMart - Manage Orders</div>
+        </a>
+
+        <div class="nav">
+            <a href="{{ url_for('portal_employee') }}" style="text-decoration: none; display: flex; align-items: center; color: #ff9900;">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#ff9900" width="24px" height="24px" style="margin-right: 5px;">
+                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                </svg>
+                <span style="color: white;">Portal Employee</span>
+            </a>
+
+            <a href="{{ url_for('labels') }}" style="text-decoration: none; display: flex; align-items: center; color: #ff9900;">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#ff9900" width="24px" height="24px" style="margin-right: 5px;">
+                    <path d="M17.63 5.84C16.59 4.8 15.22 4 13.76 4H6c-1.1 0-2 .9-2 2v7.76c0 1.45.8 2.82 1.84 3.87l5.62 5.63c.6.59 1.52.59 2.12 0l6.64-6.65c.6-.6.59-1.52 0-2.12l-6.59-6.59zm-.88 1.54 6.08 6.08L12.7 20.55l-6.07-6.08L16.75 7.38zm.88-.74-6.07 6.08L12 6h1.76c.62 0 1.26.26 1.7.62z"/>
+                </svg>
+                <span style="color: white;">Manage Labels</span>
+            </a>
+
+            <a href="{{ url_for('order_history') }}" style="text-decoration: none; display: flex; align-items: center; color: #ff9900;">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#ff9900" width="24px" height="24px" style="margin-right: 5px;">
+                    <path d="M13 3a9 9 0 1 0 9 9h-2a7 7 0 1 1-7-7v3l4-4-4-4v3zm-1 10h4v-2h-3V7h-2v5c0 .55.45 1 1 1zm5.25 5.09-1.41-1.41-3.25 3.25L9.91 16.5l-1.41 1.41L12 21.34l5.25-5.25z"/>
+                </svg>
+                <span style="color: white;">Order History</span>
+            </a>
+        </div>
+    </div>
+    </header>
+
+
+
+
+    <div class="container">
+        <h1>Manage Orders</h1>
+
+        <!-- Search Bar -->
+        <div class="search-bar">
+            <form action="{{ url_for('orders') }}" method="get">
+                <input type="text" name="search" placeholder="Search by name..." value="{{ search_query }}">
+                <button type="submit">Search</button>
+            </form>
+        </div>
+
+        <!-- Orders Table -->
+        <table>
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Customer Name</th>
+                    <th>Address</th>
+                    <th>Phone Number</th>
+                    <th>Order Summary</th>
+                    <th>Date/Time</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if orders %}
+                    {% for order in orders %}
+                        <tr>
+                            <td>{{ order['id'] }}</td>
+                            <td>{{ order['first_name'] }} {{ order['last_name'] }}</td>
+                            <td>
+                                {{ order['street_address'] }}, {{ order['city'] }},
+                                {{ order['state'] }} {{ order['zip_code'] }}
+                            </td>
+                            <td>{{ order['phone_number'] }}</td>
+                            <td>
+                                {% if order['order_summary'] %}
+                                    <ul>
+                                        {% for item in order['order_summary'].split(', ') %}
+                                            <li>{{ item }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    No items
+                                {% endif %}
+                            </td>
+                            <td>{{ order['formatted_date'] }}</td>
+                            <td>
+                                <button class="btn" onclick="markOrderReady({{ order['id'] }})">
+                                    Ready for Delivery
+                                </button>
+                                
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7">No orders found.</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
+
+
+
+
+

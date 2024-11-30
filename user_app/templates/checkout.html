@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/checkout.css') }}">
+    <link rel="stylesheet" href="../static/css/checkout.css">
+    <title>Checkout</title>
+    <script>
+
+        //This part of the code in JavaScript is for the selected saved detail to fill up outomaticly the form after selecting a saving information.
+        // JavaScript to populate the form fields based on selected saved details
+        function populateSavedDetails() {
+            const savedAddresses = {{ saved_addresses|tojson }};
+            const dropdown = document.getElementById('saved_details');
+            const selectedIndex = dropdown.selectedIndex - 1; // Ignore the first option
+            if (selectedIndex >= 0) {
+                const details = savedAddresses[selectedIndex];
+                document.getElementById('first_name').value = details.first_name || '';
+                document.getElementById('last_name').value = details.last_name || '';
+                document.getElementById('street_address').value = details.street_address || '';
+                document.getElementById('city').value = details.city || '';
+                document.getElementById('state').value = details.state || '';
+                document.getElementById('zip_code').value = details.zip_code || '';
+                document.getElementById('phone_number').value = details.phone_number || '';
+                document.getElementById('card_number').value = details.card_number || '';
+                document.getElementById('expiry_date').value = details.expiry_date || '';
+                document.getElementById('cvv').value = details.cvv || '';
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <header>
+        <!-- Header -->
+    <div class="header">
+        <a href="{{ url_for('checkout') }}" style="color: #ff9900; text-decoration: none;">
+            <div class="logo" style="font-size: 24px; font-weight: bold;">FreshMart Checkout</div>
+        </a>
+
+        <div class="nav">
+            <a href="{{ url_for('home') }}" style="text-decoration: none; display: flex; align-items: center; color: #ff9900;">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#ff9900" width="24px" height="24px" style="margin-right: 5px;">
+                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                </svg>
+                <span style="color: white;">Home</span>
+            </a>
+
+                <a href="{{ url_for('cart') }}">
+                    <img src="https://cdn-icons-png.flaticon.com/512/1170/1170576.png" alt="Cart Icon">
+                    <span style="color: white;">Back to Cart</span>
+                </a>
+        </div>
+    </div>
+    </header>
+
+
+    <h1 style="text-align: center; font-size: 40px;">Checkout</h1>
+    <div class="container">
+        <div class="card">
+            <h2>Delivery Address</h2>
+            <form action="{{ url_for('checkout') }}" method="POST">
+                <!-- Dropdown for saved details -->
+                <label for="saved_details">Saved Address and Payment.</label>
+                <select id="saved_details" onchange="populateSavedDetails()">
+                    <option value="" disabled selected>Select a saved address and payment</option>
+                    {% for detail in saved_addresses %}
+                        <option>
+                            {{ detail.first_name }} {{ detail.last_name }} - {{ detail.street_address }}
+                        </option>
+                    {% endfor %}
+                </select><br><br>
+
+                <!-- Form fields -->
+                <input type="text" id="first_name" name="first_name" placeholder="First Name" required>
+                <input type="text" id="last_name" name="last_name" placeholder="Last Name" required>
+                <textarea id="street_address" name="street_address" placeholder="Street Address" required></textarea>
+                <input type="text" id="city" name="city" placeholder="City" required>
+                <input type="text" id="state" name="state" placeholder="State" required>
+                <input type="text" id="zip_code" name="zip_code" placeholder="Zip Code" required>
+                <input type="text" id="phone_number" name="phone_number" placeholder="Phone Number" required><br><br>
+
+                <h2>Payment</h2>
+                <div class="icon-container">
+                    <i class="fa fa-cc-visa" style="color:navy;"></i>
+                    <i class="fa fa-cc-amex" style="color:blue;"></i>
+                    <i class="fa fa-cc-mastercard" style="color:red;"></i>
+                    <i class="fa fa-cc-discover" style="color:orange;"></i>
+                </div>
+                <input type="text" id="card_number" name="card_number" placeholder="Card Number" required>
+                <input type="text" id="reenter_card_number" name="reenter_card_number" placeholder="Re-enter Card Number" required>
+                <input type="text" id="expiry_date" name="expiry_date" placeholder="Expiry Date (MM/YY)" required>
+                <input type="text" id="cvv" name="cvv" placeholder="CVV" required>
+
+                <label><input type="checkbox" name="save_details"> Save delivery and payment details</label>
+
+                <button type="submit" class="btn">Place Order</button>
+            </form>
+        </div>
+
+        <!-- Order Summary -->
+        <div class="card">
+            <h2>Order Summary</h2>
+            {% for item in cart_items %}
+                <div class="order-summary-item">
+                    <img src="{{ url_for('static', filename=item.image_url) }}" alt="{{ item.name }}" style="width: 50px; height: 50px;">
+                    <p>{{ item.name }} x {{ item.quantity }}</p>
+                    <p class="order-summary-price">${{ "%.2f"|format(item.total) }}</p>
+                </div>
+            {% endfor %}
+            <p class="total-price">Cart Total: ${{ "%.2f"|format(total_price) }}</p>
+            <p class="total-price">Total Weight: {{ "%.2f"|format(total_weight) }} lbs</p>
+            {% if delivery_charge > 0 %}
+                <p class="total-price">Delivery Charge: ${{ "%.2f"|format(delivery_charge) }}</p>
+            {% else %}
+                <p class="total-price">Delivery Charge: Free</p>
+            {% endif %}
+            <p class="total-price">Final Total: ${{ "%.2f"|format(final_total) }}</p>
+        </div>
+    </div>
+</body>
+</html>
+
+
+
+
+

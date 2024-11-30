@@ -10,19 +10,6 @@
     <div class="container">
         <h1>Login as Employee</h1>
 
-        <!-- Flash messages block -->
-        {% with messages = get_flashed_messages(with_categories=True) %}
-            {% if messages %}
-                <div class="flash-messages">
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category }}">
-                            {{ message }}
-                        </div>
-                    {% endfor %}
-                </div>
-            {% endif %}
-        {% endwith %}
-
         <form action="/login" method="POST">
             <label for="email">Email:</label>
             <input type="email" id="email" name="email" placeholder="example@domain.com" required>
@@ -39,4 +26,6 @@
     </div>
 </body>
 </html>
+
+
 
