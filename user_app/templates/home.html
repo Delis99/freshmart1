@@ -8,30 +8,31 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
-    <!-- Header -->
+    <!-- Start of the Header where the header will have, Contact Dropdown, Contact Dropdown, Profile Dropdown, Cart Dropdown, Notification Dropdown -->
     <div class="header">
         
             <a href="{{ url_for('home') }}" style="color: #ff9900; text-decoration: none;">
                 <div class="logo" style="font-size: 24px; font-weight: bold;">FreshMart</div>
             </a>
 
-            <!-- Contact Dropdown -->
+            <!-- This part of the code is the Contact Dropdown where it will handle the contact information of the store with a button to submit feedback-->
             <div class="nav">
                 <div class="dropdown-container">
-                    <a href="#" style="text-decoration: none; display: flex; align-items: center; color: #ff9900;">
+                    <a href="#" style="text-decoration: none; display: flex; align-items: center; color: #ff9900;"> <!--Icon realted with contact-->
                         <i class="fas fa-phone-alt" style="margin-right: 8px; font-size: 24px;"></i>
                         <span style="color: white">Contact Us</span>
                     </a>
                     <div class="dropdown">
-                        <p><span>Phone:</span> +1-800-555-1234</p>
-                        <p><span>Email:</span> support@freshmart.com</p>
-                        <p><span>Hours:</span> Mon-Fri, 9 AM - 6 PM</p>
-                        <a href="{{ url_for('submit_feedback') }}" class="logout-btn" style="text-align: center;">Give Feedback</a>
+                        <!--Information the store-->
+                        <p><span>Phone:</span> +1-800-555-1234</p> <!--Phone Number-->
+                        <p><span>Email:</span> support@freshmart.com</p> <!--Email-->
+                        <p><span>Hours:</span> Mon-Fri, 9 AM - 6 PM</p> <!--Date and Time able to contact the store.-->
+                        <a href="{{ url_for('submit_feedback') }}" class="logout-btn" style="text-align: center;">Give Feedback</a><!--Button to submit feedback of experience of the user-->
                     </div>
                 </div>
             </div>
 
-            <!-- Search Input -->
+            <!-- This part of the code is the Search input where user will be able to search for product-->
             <div class="search-bar">
                 <form action="{{ url_for('home') }}" method="GET" class="gform, searchform">
                     <div class="search-bar">
@@ -41,59 +42,64 @@
                 </form>
             </div>
 
-            <!-- Profile Dropdown -->
+            <!--This part of the code is a Profile Dropdown where users will see part of their information-->
             <div class="nav">
                 <div class="dropdown-container">
-                    <a href="#" style="text-decoration: none; display: flex; align-items: center; color: #ff9900;">
+                    <a href="#" style="text-decoration: none; display: flex; align-items: center; color: #ff9900;"> <!--Icon related wigth profile-->
                         <i class="fas fa-user-circle" style="margin-right: 8px; font-size: 24px;"></i>
                         <div style="color: white">
                             {{ name }}
                         </div>
                     </a>
                     <div class="dropdown">
-                        <p><span>Name:</span> {{ name }} {{ last_name }}</p>
-                        <p><span>Email:</span> {{ email }}</p>
-                        <p><span>Contact:</span> {{ contact }}</p>
-                        <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+                        <p><span>Name:</span> {{ name }} {{ last_name }}</p> <!--Display the name of the user-->
+                        <p><span>Email:</span> {{ email }}</p> <!--Disply the email of the user-->
+                        <p><span>Contact:</span> {{ contact }}</p> <!--Display the contact of the user-->
+                        <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a> <!--This is a button where usere will be able to logout-->
                     </div>
                 </div>
 
-                <!-- Cart Dropdown -->
+                <!--This part of the code is a Cart Dropdown -->
                 <div class="cart-dropdown-container">
-                    <a href="{{ url_for('cart') }}">
-                        <img src="https://cdn-icons-png.flaticon.com/512/1170/1170576.png" alt="Cart Icon">
+                    <a href="{{ url_for('cart') }}"> <!--The icon is a button too that redirect user to the cart page-->
+                        <img src="https://cdn-icons-png.flaticon.com/512/1170/1170576.png" alt="Cart Icon"> <!--Display iamges or the product-->
                         <span class="cart-count">{{ cart_count }}</span>
                     </a>
+                    <!--This is the body of the dropdown of the icon cart where this will display the summary of the product added to the cart-->
                     <div class="cart-dropdown">
                         <div class="cart-header">Your Cart</div>
                         {% if cart_count > 0 %}
+                            <!-- This parte of the code check if the cart has items, and If the count is greater than 0, display the cart items -->
                             {% for item in cart_items %}
                                 <div class="cart-item">
                                     <div>
-                                        <p class="item-name">{{ item.name }}</p>
-                                        <p class="item-quantity">Qty: {{ item.quantity }}</p>
+                                        <p class="item-name">{{ item.name }}</p> <!--This display the product name-->
+                                        <p class="item-quantity">Qty: {{ item.quantity }}</p> <!--This part of the code display the quantity added to the cart of the product-->
                                     </div>
-                                    <p class="item-price">${{ (item.quantity * item.price) | round(2) }}</p>
+                                    <p class="item-price">${{ (item.quantity * item.price) | round(2) }}</p> <!--This part of the code display the total of the item quantity.-->
                                 </div>
                             {% endfor %}
                             <div class="cart-footer">
-                                Total: <span>${{ total_cost | round(2) }}</span>
+                                Total: <span>${{ total_cost | round(2) }}</span> <!--This part of the code display the total cost of the cart without including the delivery charge-->
                             </div>
                             <a href="{{ url_for('cart') }}" class="logout-btn">Go to Cart</a>
                         {% else %}
+                        <!--This part of the code is if the cart is empty it will display a message-->
                             <div style="padding: 20px; text-align: center;">Your cart is empty.</div>
                         {% endif %}
                     </div>
                 </div> 
 
-                <!-- Notification Dropdown -->
+                <!-- This part od the code is a Notification Dropdown where user will be able to see the process of the order-->
                 <div class="dropdown-container">
                     <a href="#" style="text-decoration: none; display: flex; align-items: center; color: #ff9900;">
+                        <!--This is the icon related with notification-->
                         <svg xmlns="http://www.w3.org/2000/svg" fill="#ff9900" width="24px" height="24px" viewBox="0 0 24 24" style="margin-right: 5px; animation: pulse 1s infinite;">
                             <path d="M12 22c1.1 0 1.99-.9 1.99-2H10c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5S11 3.17 11 4v.68C8.13 5.36 6.5 7.92 6.5 11v5l-1.7 1.7c-.29.29-.3.77-.01 1.06.29.29.77.29 1.06 0L7 17h10l1.15 1.76c.29.29.77.29 1.06 0 .29-.29.29-.77 0-1.06L18 16zM4 18h16v-2H4v2z"></path>
                         </svg>
                         <span style="color: white">Notifications</span>
                     </a>
+                    <!--Dropdown body-->
                     <div class="dropdown">
                         <div style="text-align: center;" class="cart-header">Notifications</div>
                         <div style="padding: 10px; font-size: 14px;">
@@ -105,31 +111,33 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </div> <!--End of the header-->
 
 
 
 
-    <!-- Main Content -->
+    <!--This part of the code is the Main Content Of the page -->
     <main>
         <div class="content">
             <h1>Welcome to FreshMart {{ name }}!</h1>
             <div class="products">
                 {% for product in products %}
+                 <!-- Loop through each product in the products list -->
                     <div class="product-card">
-                        <img src="{{ url_for('static', filename=product['image_url']) }}" alt="{{ product['name'] }}">
-                        <h3>{{ product['name'] }}</h3>
-                        <p>Price: ${{ product['price'] }}</p>
-                        <p>Weight: {{ product['weight'] }} Lbs</p>
-                        <p>Available Quantity: {{ product['quantity'] }}</p>
+                        <img src="{{ url_for('static', filename=product['image_url']) }}" alt="{{ product['name'] }}">  <!-- This part of the code display the product image -->
+                        <h3>{{ product['name'] }}</h3> <!-- Display the product name -->
+                        <p>Price: ${{ product['price'] }}</p> <!-- Display the product price -->
+                        <p>Weight: {{ product['weight'] }} Lbs</p> <!-- Display the product weigh-->
+                        <p>Available Quantity: {{ product['quantity'] }}</p>  <!-- Display the available quantity of the product -->
                         
                         {% if product['quantity'] > 0 %}
+                        <!-- If the product quantity is 0 then not show the form to add it to the cart -->
                         <form method="POST" action="{{ url_for('add_to_cart', product_id=product['id']) }}">
-                            <input type="number" id="quantity-{{ product.id }}" name="quantity" value="1" min="1" max="{{ product.quantity }}" required />
-                            <button type="submit" class="btn btn-primary">Add to Cart</button>
+                            <input type="number" id="quantity-{{ product.id }}" name="quantity" value="1" min="1" max="{{ product.quantity }}" required /> <!-- Input for selecting the quantity to add to the cart -->
+                            <button type="submit" class="btn btn-primary">Add to Cart</button> <!-- Button to submit the form and add the product to the cart -->
                         </form>
                         {% else %}
-                            <p style="color: blue;" class="out-of-stock">Out of Stock</p>
+                            <p style="color: blue;" class="out-of-stock">Out of Stock</p> <!-- If the product quantity is 0, display a message -->
                         {% endif %}
                     </div>
                 {% endfor %}

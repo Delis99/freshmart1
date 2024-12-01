@@ -7,33 +7,34 @@
     <link rel="stylesheet" href="../static/css/register_styles.css">
 </head>
 <body>
+    <!--This part of the code is the fomr of the registration from where user will be able to register.-->
     <div class="container">
         <h1>Register as User</h1>
 
         <form id="registrationForm" action="/register" method="POST">
             <label for="first_name">First Name:</label>
-            <input type="text" id="first_name" name="first_name" placeholder="John" required>
+            <input type="text" id="first_name" name="first_name" placeholder="John" required> <!--Input - First-Name-->
         
             <label for="last_name">Last Name:</label>
-            <input type="text" id="last_name" name="last_name" placeholder="Doe" required>
+            <input type="text" id="last_name" name="last_name" placeholder="Doe" required> <!--Input - Last-Name-->
         
             <label for="email">Email:</label>
-            <input type="email" id="email" name="email" placeholder="example@domain.com" required>
+            <input type="email" id="email" name="email" placeholder="example@domain.com" required> <!--Input - Email-->
         
             <label for="password">Password:</label>
-            <input type="password" id="password" name="password" placeholder="********" required>
+            <input type="password" id="password" name="password" placeholder="********" required> <!--Input - Password-->
         
             <label for="re_password">Re-enter Password:</label>
-            <input type="password" id="re_password" name="re_password" placeholder="********" required>
+            <input type="password" id="re_password" name="re_password" placeholder="********" required> <!--Input - Re-enter Password-->
 
             <label for="contact">Phone Number:</label>
-            <input type="text" id="contact" name="contact" placeholder="564-676-1234" required>
+            <input type="text" id="contact" name="contact" placeholder="564-676-1234" required> <!--Input - Phone Number-->
         
-            <button type="submit" class="btn">Register</button>
+            <button type="submit" class="btn">Register</button> <!--This is the button to submit the form to register-->
         </form>
 
         <div class="link">
-            Already have an account? <a href="/login">Login</a>
+            Already have an account? <a href="/login">Login</a> <!--This part of the code is if the user alredy have an account redirect the user to login-->
         </div>
     </div>
 
@@ -55,7 +56,7 @@
             event.target.value = input; // Set the formatted value back to the input field
         });
     
-        // Form validation and email existence check
+        // This part of the code Javascript is for validation and display alert if the input require is wrong.
         document.getElementById('registrationForm').addEventListener('submit', async function (event) {
             event.preventDefault();
     
@@ -71,7 +72,7 @@
                 return;
             }
     
-            // Check if email already exists via AJAX
+            // Check if email already exists 
             const emailCheck = await fetch('/check_email', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -95,12 +96,14 @@
                 return;
             }
     
+            //Email validation
             const specialCharRegex = /[!@#$%^&*(),.?":{}|<>]/;
             if (!specialCharRegex.test(password)) {
                 alert('Password must contain at least one special character.');
                 return;
             }
     
+            //Password validation
             if (password !== rePassword) {
                 alert('Passwords do not match. Please re-enter your passwords.');
                 return;

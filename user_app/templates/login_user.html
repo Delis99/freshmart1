@@ -10,22 +10,23 @@
 </head>
 
 <body>
+    <!--This part of the code is the form where user login-->
     <div class="container">
         <h1>Login</h1>
         <form action="/login" method="post">
             <label for="email">Email:</label>
-            <input type="email" id="email" name="email" placeholder="example@domain.com" required>
+            <input type="email" id="email" name="email" placeholder="example@domain.com" required> <!--Input - Email-->
 
             <label for="password">Password:</label>
-            <input type="password" id="password" name="password" placeholder="********" required>
+            <input type="password" id="password" name="password" placeholder="********" required> <!--Input - Password-->
 
-            <button type="submit" class="btn">Login</button>
+            <button type="submit" class="btn">Login</button> <!--Button Submit-->
         </form>
         <div class="link">
-            Don't have an account? <a href="/register">Register</a>
+            Don't have an account? <a href="/register">Register</a> <!--If the user does not have an account the user will be able to redirect for register-->
         </div>
         <div class="reset-password">
-            <a href="/register">Forgot Password?</a>
+            <a href="/register">Forgot Password?</a> <!--If the user forgot the password user will be able to redirect to change the password-->
         </div>
     </div>
 </body>

@@ -37,7 +37,8 @@ def home():
 
 
 
-
+#------------------------------------------------------------------------------------------------------------------------------
+# This part of the code is the delivery register in python
 @app.route('/delivery/register', methods=['GET', 'POST'])
 def delivery_register():
     if request.method == 'POST':
@@ -75,6 +76,11 @@ def delivery_register():
     return render_template('delivery_register.html')
 
 
+
+
+
+#------------------------------------------------------------------------------------------------------------------------------
+# This part of the code is the delivery login page in python
 @app.route('/delivery/login', methods=['GET', 'POST'])
 def delivery_login():
     if request.method == 'POST':
@@ -102,6 +108,11 @@ def delivery_login():
     return render_template('delivery_login.html')
 
 
+
+
+
+#------------------------------------------------------------------------------------------------------------------------------
+# This part of the code is the delivery home page in python
 @app.route('/delivery_home', methods=['GET', 'POST', 'DELETE'])
 def delivery_home():
     driver_id = session.get('driver_id')
@@ -126,6 +137,11 @@ def delivery_home():
     return render_template('delivery_home.html', orders=orders)
 
 
+
+
+
+#------------------------------------------------------------------------------------------------------------------------------
+# This part of this code is the the accept order in python
 @app.route('/accept_order', methods=['POST'])
 def accept_order():
     driver_id = session.get('driver_id')
@@ -142,7 +158,7 @@ def accept_order():
     cursor = conn.cursor()
 
     try:
-        # Assign the order to the driver and ensure no other driver can accept it
+        # This part of the code assign the order to the driver and ensure no other driver can accept it.
         query = """
             UPDATE orders
             SET driver_id = %s, status = 'Order Pickup On the Way'
@@ -162,6 +178,12 @@ def accept_order():
         conn.close()
 
 
+
+
+
+
+#------------------------------------------------------------------------------------------------------------------------------
+# This part of this code is the cancel order in python
 @app.route('/cancel_order', methods=['POST'])
 def cancel_order():
     driver_id = session.get('driver_id')
@@ -197,22 +219,27 @@ def cancel_order():
         conn.close()
 
 
+
+
+
+#------------------------------------------------------------------------------------------------------------------------------
+# This part of this code is the delivered order in python
 @app.route('/deliver-order/<int:order_id>', methods=['POST'])
 def deliver_order(order_id):
     driver_id = session.get('driver_id')
     if not driver_id:
         return jsonify({'message': 'Unauthorized access. Please log in.'}), 401
 
-    # Fetch uploaded delivery image
+    # This part of the code fetch the uploaded delivery image
     delivery_image = request.files.get('delivery_image')
     if not delivery_image:
         return jsonify({'message': 'Delivery image is required.'}), 400
 
-    # Ensure the directory exists
+    # This part of the code is to ensure the directory exists
     image_dir = os.path.join('delivery_app','static', 'delivery_images')
     os.makedirs(image_dir, exist_ok=True)
 
-    # Save the uploaded image
+    # This part of the code save the uploaded image
     image_filename = f"{order_id}_{secure_filename(delivery_image.filename)}"
     image_path = os.path.join(image_dir, image_filename)
     try:
@@ -224,7 +251,7 @@ def deliver_order(order_id):
     cursor = conn.cursor(dictionary=True)
 
     try:
-        # Atomically check and fetch the order assigned to this driver
+        # This part of this code is the atomically that check and fetch the order assigned to this driver
         cursor.execute("""
             SELECT * FROM orders WHERE id = %s AND driver_id = %s AND status = 'Order Pickup On the Way'
         """, (order_id, driver_id))
@@ -233,7 +260,7 @@ def deliver_order(order_id):
         if not order:
             return jsonify({'message': 'Order not found, unauthorized, or already delivered.'}), 404
 
-        # Insert the order into `history_orders`
+        # This part of the code insert the order into `history_orders`
         cursor.execute("""
             INSERT INTO history_orders (
                 id, user_id, first_name, last_name, street_address, city, state, zip_code,
@@ -247,7 +274,7 @@ def deliver_order(order_id):
             order['created_at']
         ))
 
-        # Delete the order from the `orders` table
+        # This part of the code delete the order from the `orders` table
         cursor.execute("DELETE FROM orders WHERE id = %s", (order_id,))
         conn.commit()
 
@@ -263,9 +290,8 @@ def deliver_order(order_id):
 
 
 
-
-
-
+#------------------------------------------------------------------------------------------------------------------------------
+# This part of the code is the delivery logout in python
 @app.route('/delivery/logout')
 def delivery_logout():
     session.pop('driver_id', None)
@@ -275,13 +301,6 @@ def delivery_logout():
 
 if __name__ == '__main__':
     app.run(debug=True)
-
-
-
-
-
-
-
 
 
 

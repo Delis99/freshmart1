@@ -12,11 +12,6 @@ from db_connection import get_db_connection
 
 user_bp = Blueprint('user', __name__)
 
-@user_bp.route('/')
-def index_employee():
-    return "Welcome to the Employee App!"
-
-
 
 
 app = Flask(__name__)
@@ -39,7 +34,10 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 def make_session_permanent():
     session.permanent = True
 
-# Index page
+
+
+#------------------------------------------------------------------------------------------------------------------------------
+# This part of the code is the Index page in python.
 @app.route('/')
 def index():
     search_query = request.args.get('search', '').strip().lower()
@@ -47,10 +45,10 @@ def index():
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
 
-        # Search
+        # This part of the code is for the Search input of the index page.
         if search_query:
             cursor.execute(
-                "SELECT * FROM products WHERE LOWER(name) LIKE %s ORDER BY name ASC",
+                "SELECT * FROM products WHERE LOWER(name) LIKE %s ORDER BY name ASC", # This is the table name Where item will be selected
                 (f"%{search_query}%",)
             )
         else:
@@ -67,13 +65,13 @@ def index():
 
 
 
-
-
-
+#------------------------------------------------------------------------------------------------------------------------------
+# This part of the code is the register page in python
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        # Collect data from the form
+
+        # This part of the code collect data from the form
         first_name = request.form['first_name']
         last_name = request.form['last_name']
         email = request.form['email']
@@ -81,13 +79,13 @@ def register():
         re_password = request.form['re_password']
         contact = request.form['contact']
 
-        # Validate password strength
+        # This part of the code Validate the password strength
         password_regex = r"^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
         if not re.match(password_regex, password):
             flash("Password must contain at least 8 characters, one uppercase letter, one number, and one special character.", "danger")
             return redirect(url_for('register_user'))
 
-        # Check if passwords match
+        # This part of the code check if passwords match.
         if password != re_password:
             flash("Passwords do not match.", "danger")
             return redirect(url_for('register_user'))
@@ -96,7 +94,7 @@ def register():
             conn = get_db_connection()
             cursor = conn.cursor()
 
-            # Check if email already exists
+            # This part of Check  if email already exists
             cursor.execute("SELECT 1 FROM users WHERE email = %s", (email,))
             email_exists = cursor.fetchone()
 
@@ -143,14 +141,8 @@ def check_email():
 
 
 
-
-
-
-
-
-
-
-#Login
+#------------------------------------------------------------------------------------------------------------------------------
+# This part of the code is the Login page in paython,
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -183,7 +175,9 @@ def login():
     return render_template('login_user.html')
 
 
-# Add to Cart Button
+
+#------------------------------------------------------------------------------------------------------------------------------
+# This part of the code is the Add to Cart Button in python
 @app.route('/add_to_cart/<int:product_id>', methods=['POST'])
 def add_to_cart(product_id):
     if 'user_id' not in session:
@@ -196,19 +190,19 @@ def add_to_cart(product_id):
     cursor = conn.cursor()
 
     try:
-        # Check if the product is already in the cart
+        # This is to check if the product is already in the cart
         cursor.execute("SELECT quantity FROM cart WHERE user_id = %s AND product_id = %s", (user_id, product_id))
         existing_item = cursor.fetchone()
 
         if existing_item:
-            # Update the cart with the new quantity
+            # This is ot update the cart with the new quantity
             cursor.execute("UPDATE cart SET quantity = quantity + %s WHERE user_id = %s AND product_id = %s", (quantity, user_id, product_id))
         else:
-            # Add the new item to the cart
+            # This is for Add the new item to the cart
             cursor.execute("INSERT INTO cart (user_id, product_id, quantity) VALUES (%s, %s, %s)", (user_id, product_id, quantity))
 
         conn.commit()
-        flash("Item added to your cart!", "success")
+        flash("Item added to your cart!", "success") 
 
     except Exception as e:
         flash(f"Error adding item to cart: {str(e)}", "danger")
@@ -220,7 +214,8 @@ def add_to_cart(product_id):
 
 
 
-#Home page
+#------------------------------------------------------------------------------------------------------------------------------
+# This part of the code is the Home page in python
 @app.route('/home', methods=['GET', 'POST'])
 def home():
     if 'user_id' not in session:
@@ -232,7 +227,7 @@ def home():
     cursor = conn.cursor(dictionary=True)
 
     try:
-        # Fetch user details
+        # This part of the code is to fetch user details
         cursor.execute("SELECT name, last_name, email, contact FROM users WHERE id = %s", (user_id,))
         user = cursor.fetchone()
 
@@ -240,7 +235,7 @@ def home():
             flash("User not found.", "danger")
             return redirect(url_for('login'))
 
-        # Fetch products
+        # This part of the code is to fetch products
         search_query = request.args.get('search', '')
         if search_query:
             cursor.execute("SELECT * FROM products WHERE quantity > 0 AND name LIKE %s", ('%' + search_query + '%',))
@@ -248,7 +243,7 @@ def home():
             cursor.execute("SELECT * FROM products WHERE quantity > 0")
         products = cursor.fetchall()
 
-        # Fetch cart details
+        # This part of the code is to fetch cart details
         cursor.execute("""
             SELECT p.name, c.quantity, p.price 
             FROM cart AS c
@@ -257,7 +252,7 @@ def home():
         """, (user_id,))
         cart_items = cursor.fetchall()
 
-        # Calculate cart totals
+        # This part of the code is to calculate the total of the cart 
         cart_count = sum(item['quantity'] for item in cart_items)
         total_cost = sum(item['quantity'] * item['price'] for item in cart_items)
 
@@ -281,7 +276,8 @@ def home():
 
 
 
-# View Cart
+#------------------------------------------------------------------------------------------------------------------------------
+# This part of the code is the View Cart page in python
 @app.route('/cart')
 def cart():
     if 'user_id' not in session:
@@ -293,7 +289,7 @@ def cart():
     cursor = conn.cursor(dictionary=True)
 
     try:
-        # Join `cart` and `products` to fetch detailed product information
+        # This part of the code Join `cart` and `products` to fetch detailed product information
         query = """
             SELECT 
                 c.id AS cart_id, 
@@ -310,7 +306,7 @@ def cart():
         cursor.execute(query, (user_id,))
         cart_items = cursor.fetchall()
 
-        # Calculate totals
+        # This part of the code calculate the totals
         total_price = sum(item['price'] * item['quantity'] for item in cart_items)
         total_weight = sum(item['weight'] * item['quantity'] for item in cart_items)
         unique_items = len(cart_items)
@@ -341,20 +337,23 @@ def cart():
     )
 
 
+
+#------------------------------------------------------------------------------------------------------------------------------
+#This part of the code is the update quantity in the cart in python
 @app.route('/update_quantity', methods=['POST'])
 def update_quantity():
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
     user_id = session['user_id']
-    cart_id = int(request.form['cart_id'])  # Use cart_id to identify the item in the cart
+    cart_id = int(request.form['cart_id'])  # this parte of the code use cart_id to identify the item in the cart
     quantity = int(request.form['quantity'])
 
     conn = get_db_connection()
     cursor = conn.cursor()
 
     try:
-        # Update the quantity of the item in the cart
+        # This part of the code update the quantity of the item in the cart
         cursor.execute("UPDATE cart SET quantity = %s WHERE id = %s AND user_id = %s", (quantity, cart_id, user_id))
         conn.commit()
         flash("Cart updated successfully", "success")
@@ -380,7 +379,7 @@ def remove_from_cart(product_id):
     cursor = conn.cursor()
 
     try:
-        # Remove the product from the cart for the logged-in user
+        # This part of the code code remove the product from the cart for the logged-in user
         cursor.execute("DELETE FROM cart WHERE product_id = %s AND user_id = %s", (product_id, user_id))
         conn.commit()
         flash("Item removed from cart", "success")
@@ -396,26 +395,19 @@ def remove_from_cart(product_id):
 
 
 
-
-
-
-
-
-
-
-
-
+#------------------------------------------------------------------------------------------------------------------------------
+# This part of the code is the checkout python
 @app.route('/checkout', methods=['GET', 'POST'])
 def checkout():
     if 'user_id' not in session:
-        session['user_id'] = 1  # Simulate login for testing
+        session['user_id'] = 1  # This part of the code simulate login for testing
 
     user_id = session['user_id']
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
-    # Fetch saved details for the dropdown
+    # This part of the code fetch saved details for the dropdown
     cursor.execute("""
         SELECT DISTINCT first_name, last_name, street_address, city, state, zip_code, 
                phone_number, card_number, expiry_date, cvv 
@@ -423,7 +415,7 @@ def checkout():
     """, (user_id,))
     saved_addresses = cursor.fetchall()
 
-    # Fetch cart items
+    # This part of the code fetch cart items
     cursor.execute("""
         SELECT p.id AS product_id, p.name, p.price, c.quantity, p.weight, p.image_url, (p.price * c.quantity) AS total
         FROM cart c
@@ -432,14 +424,14 @@ def checkout():
     """, (user_id,))
     cart_items = cursor.fetchall()
 
-    # Calculate totals
+    # This part of the code alculate totals
     total_weight = sum(item['weight'] * item['quantity'] for item in cart_items)
     total_price = sum(item['total'] for item in cart_items)
     delivery_charge = 5 if total_weight > 20 else 0
     final_total = total_price + delivery_charge
 
     if request.method == 'POST':
-        # Fetch form data
+        # This part of the code fetch form data
         first_name = request.form['first_name']
         last_name = request.form['last_name']
         street_address = request.form['street_address']
@@ -453,16 +445,16 @@ def checkout():
         cvv = request.form['cvv']
         save_details = 'save_details' in request.form  # Check if the save checkbox is checked
 
-        # Ensure the card numbers match
+        # This part of the code ensure the card numbers match
         if card_number != reenter_card_number:
             flash("Card numbers do not match. Please try again.", "danger")
             return redirect(url_for('checkout'))
 
-        # Prepare the order summary
+        # This part of the code prepare the order summary
         order_summary = ", ".join([f"{item['name']} x {item['quantity']}" for item in cart_items])
 
         try:
-            # Insert the order into the orders table
+            # This part of the code insert the order into the orders table
             cursor.execute("""
                 INSERT INTO orders (
                     user_id, first_name, last_name, street_address, city, state, 
@@ -475,13 +467,13 @@ def checkout():
                   cvv if save_details else None,
                   order_summary, total_price, delivery_charge, final_total))
 
-            # Decrease product quantities based on the order
+            # This part of the code decrease product quantities based on the order
             for item in cart_items:
                 cursor.execute("""
                     UPDATE products SET quantity = quantity - %s WHERE id = %s
                 """, (item['quantity'], item['product_id']))
 
-            # Clear the user's cart
+            # This part of the code clear the user's cart after placed order. 
             cursor.execute("DELETE FROM cart WHERE user_id = %s", (user_id,))
 
             conn.commit()
@@ -492,7 +484,7 @@ def checkout():
             cursor.close()
             conn.close()
 
-            # Redirect to the thank-you page
+        # This part of the code redirect to the thank-you page after placed order.
         return redirect(url_for('thank_you_for_checkout'))
 
     cursor.close()
@@ -509,29 +501,16 @@ def checkout():
     )
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#------------------------------------------------------------------------------------------------------------------------------
+# This part of the code is the thank you page after placed order in python.
 @app.route('/thank_you_for_checkout')
 def thank_you_for_checkout():
     return render_template('thank_you_for_checkout.html')
 
 
 
-
+#------------------------------------------------------------------------------------------------------------------------------
+# This part of the code is the feedback for of the user in python.
 @app.route('/feedback', methods=['GET', 'POST'])
 def submit_feedback():
     if request.method == 'POST':
@@ -548,9 +527,9 @@ def submit_feedback():
                 VALUES (%s, %s, %s)
             """, (name, email, feedback))
             conn.commit()
-            return render_template('feedback_user.html', success=True)  # Pass success flag
+            return render_template('feedback_user.html', success=True)  # This part of the code pass success flag.
         except Exception as e:
-            return render_template('feedback_user.html', error=True)  # Pass error flag
+            return render_template('feedback_user.html', error=True)  # This part of the code pass error flag.
         finally:
             cursor.close()
             conn.close()
@@ -559,12 +538,8 @@ def submit_feedback():
 
 
 
-
-
-
-
-
-# Logout 
+#------------------------------------------------------------------------------------------------------------------------------
+# This part of the code is the Logout in python. 
 @app.route('/logout')
 def logout():
     session.clear()
@@ -573,3 +548,5 @@ def logout():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+

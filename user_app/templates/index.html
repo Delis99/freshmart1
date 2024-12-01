@@ -7,37 +7,39 @@
     <link rel="stylesheet" href="../static/css/index.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
-    <!--This part of the code is to display an alert to the user that they must register or login before bying a product-->
+    <!--This part of the code display an alert to the user that they must register or login before buying a product-->
     <script>
         function showAlert() {
-            alert("Please register or log in to add products to your cart.");
+            alert("Please register or log in to add products to your cart."); //Display the alert
         }
     </script>
 
 </head>
 <body>
-    <!-- Header -->
+    <!-- Start of the Header where the header will contain Contact Dropdown, Search Input, Login Button, and register button -->
     <header class="header">
         <div class="top-bar">
             <a href="{{ url_for('index') }}" style="color: #ff9900; text-decoration: none;">
-                <div class="logo" style="font-size: 24px; font-weight: bold;">FreshMart</div>
+                <div class="logo" style="font-size: 24px; font-weight: bold;">FreshMart</div> <!--Display the name of the Store -->
             </a>
-            <!-- Contact Dropdown -->
+
+            <!-- This Part of the code is a Contact Dropdown -->
             <div class="nav">
                 <div class="dropdown-container">
                     <a href="#" style="text-decoration: none; display: flex; align-items: center; color: #ff9900;">
                         <i class="fas fa-phone-alt" style="margin-right: 8px; font-size: 24px;"></i>
                         <span style="color: white">Contact Us</span>
                     </a>
+                    <!--Information the store-->
                     <div class="dropdown">
-                        <p><span>Phone:</span> +1-800-555-1234</p>
-                        <p><span>Email:</span> support@freshmart.com</p>
-                        <p><span>Hours:</span> Mon-Fri, 9 AM - 6 PM</p>
+                        <p><span>Phone:</span> +1-800-555-1234</p> <!--Phone Number-->
+                        <p><span>Email:</span> support@freshmart.com</p> <!--Email-->
+                        <p><span>Hours:</span> Mon-Fri, 9 AM - 6 PM</p> <!--Date and Time able to contact the store.-->
                     </div>
                 </div>
             </div>
 
-             <!-- Search Input -->
+             <!--This part of the code if a Search Input where the user will be able to seach for product but not able to buy them until register -->
             <div class="search-bar">
                 <form action="{{ url_for('index') }}" method="GET" class="gform, searchform">
                     <div class="search-bar">
@@ -48,10 +50,10 @@
             </div>
 
  
-             <!-- Login Button -->
+             <!--This part of the code is a Login Button -->
             <div class="nav-icons">
                 <a href="{{ url_for('login') }}">
-                    <img src="https://cdn-icons-png.flaticon.com/512/747/747545.png" alt="Login Icon">
+                    <img src="https://cdn-icons-png.flaticon.com/512/747/747545.png" alt="Login Icon"> <!--Icon related with registration form-->
                     Login
                 </a>
                 <a href="{{ url_for('register') }}">
@@ -61,26 +63,27 @@
         </div>
     </header>
 
-    <!-- Main Content -->
+    <!--This part of the code is the Main Content of the page where product will be display-->
     <main>
         <div class="content">
             <h1>Welcome to FreshMart</h1>
             <p>Your one-stop shop for fresh and organic groceries.</p>
             <div class="products">
                 {% for product in products %}
+                <!-- Loop through each product in the products list -->
                 <div class="product-card">
-                    <img src="{{ url_for('static', filename=product['image_url']) }}" alt="{{ product['name'] }}">
-                    <h3>{{ product['name'] }}</h3>
-                    <p>Price: ${{ product['price'] }}</p>
-                    <p>Weight: {{ product['weight'] }} Lbs</p>
-                    <p>Available Quantity: {{ product['quantity'] }}</p>
+                    <img src="{{ url_for('static', filename=product['image_url']) }}" alt="{{ product['name'] }}">  <!-- This part of the code display the product image -->
+                    <h3>{{ product['name'] }}</h3> <!-- Display the product name -->
+                    <p>Price: ${{ product['price'] }}</p> <!-- Display the product price -->
+                    <p>Weight: {{ product['weight'] }} Lbs</p> <!-- Display the product weigh-->
+                    <p>Available Quantity: {{ product['quantity'] }}</p> <!-- Display the available quantity of the product -->
             
                     {% if product['quantity'] > 0 %}
                             <!-- If the user is not logged in, show the alert -->
                             <input type="number" id="quantity-{{ product.id }}" name="quantity" value="1" min="1" max="{{ product.quantity }}" required />
                             <button class="btn btn-primary" onclick="showAlert()">Add to Cart</button>
                     {% else %}
-                        <p style="color: blue;" class="out-of-stock">Out of Stock</p>
+                        <p style="color: blue;" class="out-of-stock">Out of Stock</p> <!-- If the product quantity is 0, display a message -->
                     {% endif %}
                 </div>
             {% endfor %}

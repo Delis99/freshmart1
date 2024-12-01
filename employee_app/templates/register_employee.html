@@ -7,50 +7,52 @@
     <link rel="stylesheet" href="../static/register_employee.css">
 </head>
 <body>
+
+    <!--This part of the code is the input form of the employee registration-->
     <div class="container">
         <h1>Register as Employee</h1>
 
-        <form id="registrationForm" action="/register" method="POST">
+        <form id="registrationForm" action="/register" method="POST"> 
             <label for="first_name">First Name:</label>
-            <input type="text" id="first_name" name="first_name" placeholder="John" required>
+            <input type="text" id="first_name" name="first_name" placeholder="John" required> <!--Input - First Name-->
         
             <label for="last_name">Last Name:</label>
-            <input type="text" id="last_name" name="last_name" placeholder="Doe" required>
+            <input type="text" id="last_name" name="last_name" placeholder="Doe" required> <!--Input - Last Name-->
         
             <label for="email">Email:</label>
-            <input type="email" id="email" name="email" placeholder="example@domain.com" required>
+            <input type="email" id="email" name="email" placeholder="example@domain.com" required> <!--Input - Email-->
         
             <label for="password">Password:</label>
-            <input type="password" id="password" name="password" placeholder="********" required>
+            <input type="password" id="password" name="password" placeholder="********" required> <!--Input - Password-->
         
             <label for="re_password">Re-enter Password:</label>
-            <input type="password" id="re_password" name="re_password" placeholder="********" required>
+            <input type="password" id="re_password" name="re_password" placeholder="********" required> <!--Input - Re-enter Password-->
 
             <label for="contact">Phone Number:</label>
-            <input type="text" id="contact" name="contact" placeholder="564-676-1234" required>
+            <input type="text" id="contact" name="contact" placeholder="564-676-1234" required> <!--Input - Phone Number-->
         
-            <button type="submit" class="btn">Register</button>
+            <button type="submit" class="btn">Register</button> <!--This part of the code is the submit button of the form registration-->
         </form>
 
         <div class="link">
-            Already have an account? <a href="/login">Login</a>
+            Already have an account? <a href="/login">Login</a> <!--This part of the code is if employee already registered it redirect the employee ro the login page-->
         </div>
     </div>
 
     <script>
-        // Mock function to simulate email existence check
+        // This part of the code code mock function to simulate email existence check
         async function isEmailAlreadyExists(email) {
-            // Simulate a server-side email existence check with a mock API
+            // This part of the code simulate a server-side email existence check with a mock API
             const existingEmails = ['test@example.com', 'user@domain.com']; // Example of existing emails
             return existingEmails.includes(email);
         }
     
-        // Real-time phone number formatting
+        // This part of the code is a phone number formatting
         document.getElementById('contact').addEventListener('input', function (event) {
-            let input = event.target.value.replace(/\D/g, ''); // Remove all non-numeric characters
-            if (input.length > 10) input = input.slice(0, 10); // Limit to 10 digits
+            let input = event.target.value.replace(/\D/g, ''); // This part of the code temove all non-numeric characters
+            if (input.length > 10) input = input.slice(0, 10); // This part of the code limit to 10 digits
     
-            // Format the input as (XXX)-XXX-XXXX
+            // This part of the code format the input as (XXX)-XXX-XXXX
             if (input.length > 6) {
                 input = `(${input.slice(0, 3)})-${input.slice(3, 6)}-${input.slice(6)}`;
             } else if (input.length > 3) {
@@ -59,28 +61,28 @@
                 input = `(${input}`;
             }
     
-            event.target.value = input; // Set the formatted value back to the input field
+            event.target.value = input; 
         });
     
-        // Form validation and submission logic
+        // This part of the code is the form validation and submission logic
         document.getElementById('registrationForm').addEventListener('submit', async function (event) {
-            // Prevent form submission
+            // This part of the code prevent form submission
             event.preventDefault();
     
-            // Get form values
+            // This part of the code get form values
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const rePassword = document.getElementById('re_password').value;
             const phoneNumber = document.getElementById('contact').value.replace(/\D/g, ''); // Remove formatting for validation
     
-            // Email validation
+            // This part of the code is the email validation
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(email)) {
                 alert('Please enter a valid email address.');
                 return;
             }
     
-            // Check if email already exists via AJAX
+            // This part of the code check if email already exists
             const emailCheck = await fetch('/check_email', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -92,32 +94,32 @@
                 return;
             }
     
-            // Phone number validation
+            // This part of the code is the phone number validation
             if (phoneNumber.length !== 10) {
                 alert('Phone number must be exactly 10 digits.');
                 return;
             }
     
-            // Password length validation
+            // This part of the code is the password length validation
             if (password.length < 8) {
                 alert('Password must be at least 8 characters long.');
                 return;
             }
     
-            // Password special character validation
+            // This part of the code is the password special character validation
             const specialCharRegex = /[!@#$%^&*(),.?":{}|<>]/;
             if (!specialCharRegex.test(password)) {
                 alert('Password must contain at least one special character.');
                 return;
             }
     
-            // Password match validation
+            // This part of the code is the password match validation
             if (password !== rePassword) {
                 alert('Passwords do not match. Please re-enter your passwords.');
                 return;
             }
     
-            // Success alert and submit the form
+            // This part of the code is the success alert and submit the form
             alert('Registration successful! Welcome aboard!');
             this.submit();
         });

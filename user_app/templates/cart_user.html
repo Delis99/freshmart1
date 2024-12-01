@@ -10,10 +10,10 @@
 <body>
 
     <header>
-        <!-- Header -->
+        <!-- Header display the name of the store + the name of the actual page. Also, displya the home button to go back to the main page. -->
     <div class="header">
         <a href="{{ url_for('cart') }}" style="color: #ff9900; text-decoration: none;">
-            <div class="logo" style="font-size: 24px; font-weight: bold;">FreshMart Checkout</div>
+            <div class="logo" style="font-size: 24px; font-weight: bold;">FreshMart - Cart</div>
         </a>
 
         <div class="nav">
@@ -25,15 +25,19 @@
             </a>
         </div>
     </div>
-    </header>
-    
+    </header> <!-- End of the header-->
+
+
+    <!--This the start of the body of Cart page-->
     <div class="container">
         <h1>Your Cart</h1>
 
+        <!--This part part of the code here (loop) is, if the cart has unique item it will display the cart table-->
         {% if unique_items > 0 %}
             <table class="cart-table">
                 <thead>
                     <tr>
+                        <!--This is the header for the Cart-->
                         <th>Image</th>
                         <th>Name</th>
                         <th>Price</th>
@@ -47,16 +51,18 @@
                     {% for item in cart_items %}
                         <tr>
                             <td>
+                                <!-- This parts of code (Loop) go through each item in the cart and display its details -->
                                 {% if item.image_url %}
                                 <img src="{{ url_for('static', filename=item.image_url) }}" alt="{{ item.name }}" class="cart-image">
                                 {% else %}
                                     No Image
                                 {% endif %}
                             </td>
-                            <td>{{ item.name }}</td>
-                            <td>${{ "%.2f"|format(item.price) }}</td>
-                            <td>{{ "%.2f"|format(item.weight) }}</td>
+                            <td>{{ item.name }}</td> <!--This is to display the product name-->
+                            <td>${{ "%.2f"|format(item.price) }}</td><!--This is to display the product price formate to 2 decimals placed-->
+                            <td>{{ "%.2f"|format(item.weight) }}</td><!--This is to display the product weigh-->
 
+                            <!--This Form is to update the quantity of the product -->
                             <td class="quantity-adjuster">
                                 <form action="{{ url_for('update_quantity') }}" method="post" style="display: inline;">
                                     <input type="hidden" name="cart_id" value="{{ item.cart_id }}">
@@ -65,8 +71,9 @@
                                 </form>
                             </td>
 
-                            <td>${{ "%.2f"|format(item.price * item.quantity) }}</td>
+                            <td>${{ "%.2f"|format(item.price * item.quantity) }}</td> <!-- This dispay the Total price for the product -->
                             <td>
+                                <!--This part of the code is to remove the product from the cart after sucessfully placed order. -->
                                 <a href="{{ url_for('remove_from_cart', product_id=item.product_id) }}" class="remove-btn" style="text-decoration: none;">Remove</a>
                             </td>
                         </tr>
@@ -75,20 +82,29 @@
             </table>
 
             <div class="cart-summary">
+                <!-- This part code display summary information about the cart -->
                 <p>Total Items: <span>{{ unique_items }}</span></p>
                 <p>Total Weight: <span>{{ "%.2f"|format(total_weight) }} lbs</span></p>
                 <p>Total Price: <span>${{ "%.2f"|format(total_price) }}</span></p>
+
                 {% if delivery_charge > 0 %}
+                <!--This part of the code is, If a delivery charge is applied, display the amount of the charge -->
                 <p>Delivery Charge: <span> ${{ "%.2f"|format(delivery_charge) }} </span></p>
                 {% else %}
+
+                    <!-- If no delivery charge, display "Free" -->
                     <p>Delivery Charge: <span>Free</span></p>
                 {% endif %}
+
+                 <!-- This part of the code is to display the final total including the delivery charge -->
                 <p>Final Total: <span>${{ "%.2f"|format(final_total) }}</span></p>
             </div>
 
+             <!--This is the button to proceed to the checkout page -->
             <a href="{{ url_for('checkout') }}" class="checkout-btn">Proceed to Checkout</a>
 
         {% else %}
+        <!-- This part of the code is for, If the cart is empty, display a message and provide a link to return to the home page -->
             <p class="empty-cart">Your cart is currently empty.</p>
             <a href="{{ url_for('home') }}" class="back-home-btn">Back to Home</a>
         {% endif %}

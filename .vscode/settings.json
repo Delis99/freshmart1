@@ -3,6 +3,6 @@
     "editor.dropIntoEditor.enabled": true,
     "editor.inlayHints.enabled": "on",
     "editor.stickyScroll.scrollWithEditor": true,
-    "git.enabled": false,
+    "git.enabled": true,
     "git.enableCommitSigning": false
 }

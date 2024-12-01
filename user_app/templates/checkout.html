@@ -2,15 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"> <!--This is the library from where we are getting the icon of credit card disply-->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/checkout.css') }}">
     <link rel="stylesheet" href="../static/css/checkout.css">
     <title>Checkout</title>
     <script>
 
-        //This part of the code in JavaScript is for the selected saved detail to fill up outomaticly the form after selecting a saving information.
-        // JavaScript to populate the form fields based on selected saved details
+        //This part of the code in "JavaScript" is for the selected saved detail to fill up automaticly the form after selecting a saving information.//
         function populateSavedDetails() {
             const savedAddresses = {{ saved_addresses|tojson }};
             const dropdown = document.getElementById('saved_details');
@@ -34,12 +33,13 @@
 <body>
 
     <header>
-        <!-- Header -->
+        <!-- This prt of teh code is the Header and display the store name + the current page. Also has 2 button to return either to the home page or back to the cart-->
     <div class="header">
         <a href="{{ url_for('checkout') }}" style="color: #ff9900; text-decoration: none;">
             <div class="logo" style="font-size: 24px; font-weight: bold;">FreshMart Checkout</div>
         </a>
 
+        <!--Rediret back to the home page-->
         <div class="nav">
             <a href="{{ url_for('home') }}" style="text-decoration: none; display: flex; align-items: center; color: #ff9900;">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#ff9900" width="24px" height="24px" style="margin-right: 5px;">
@@ -48,21 +48,23 @@
                 <span style="color: white;">Home</span>
             </a>
 
+                <!--Rediret back to the home Cart-->
                 <a href="{{ url_for('cart') }}">
                     <img src="https://cdn-icons-png.flaticon.com/512/1170/1170576.png" alt="Cart Icon">
                     <span style="color: white;">Back to Cart</span>
                 </a>
         </div>
     </div>
-    </header>
+    </header> <!--End of the header-->
 
-
+    <!--This is where the body of the checkout page start-->
     <h1 style="text-align: center; font-size: 40px;">Checkout</h1>
     <div class="container">
         <div class="card">
             <h2>Delivery Address</h2>
             <form action="{{ url_for('checkout') }}" method="POST">
-                <!-- Dropdown for saved details -->
+
+                <!--This part of the code if a  Dropdown for the information saved details -->
                 <label for="saved_details">Saved Address and Payment.</label>
                 <select id="saved_details" onchange="populateSavedDetails()">
                     <option value="" disabled selected>Select a saved address and payment</option>
@@ -71,17 +73,18 @@
                             {{ detail.first_name }} {{ detail.last_name }} - {{ detail.street_address }}
                         </option>
                     {% endfor %}
-                </select><br><br>
+                </select><br><br>  <!--End of the saved deatils-->
 
-                <!-- Form fields -->
-                <input type="text" id="first_name" name="first_name" placeholder="First Name" required>
-                <input type="text" id="last_name" name="last_name" placeholder="Last Name" required>
-                <textarea id="street_address" name="street_address" placeholder="Street Address" required></textarea>
-                <input type="text" id="city" name="city" placeholder="City" required>
-                <input type="text" id="state" name="state" placeholder="State" required>
-                <input type="text" id="zip_code" name="zip_code" placeholder="Zip Code" required>
-                <input type="text" id="phone_number" name="phone_number" placeholder="Phone Number" required><br><br>
+                <!--This part of the code is a Form fields where the user will use to enter their personal information. -->
+                <input type="text" id="first_name" name="first_name" placeholder="First Name" required> <!--Input - First name -->
+                <input type="text" id="last_name" name="last_name" placeholder="Last Name" required> <!--Input - Last name -->
+                <textarea id="street_address" name="street_address" placeholder="Street Address" required></textarea> <!--Input - Address-->
+                <input type="text" id="city" name="city" placeholder="City" required> <!--Input - City-->
+                <input type="text" id="state" name="state" placeholder="State" required> <!--Input - States-->
+                <input type="text" id="zip_code" name="zip_code" placeholder="Zip Code" required> <!--Input - Zip code-->
+                <input type="text" id="phone_number" name="phone_number" placeholder="Phone Number" required><br><br> <!--Input - Phone number-->
 
+                <!--This part of the code here is to display the icon of credit card acepted-->
                 <h2>Payment</h2>
                 <div class="icon-container">
                     <i class="fa fa-cc-visa" style="color:navy;"></i>
@@ -89,35 +92,41 @@
                     <i class="fa fa-cc-mastercard" style="color:red;"></i>
                     <i class="fa fa-cc-discover" style="color:orange;"></i>
                 </div>
-                <input type="text" id="card_number" name="card_number" placeholder="Card Number" required>
-                <input type="text" id="reenter_card_number" name="reenter_card_number" placeholder="Re-enter Card Number" required>
-                <input type="text" id="expiry_date" name="expiry_date" placeholder="Expiry Date (MM/YY)" required>
-                <input type="text" id="cvv" name="cvv" placeholder="CVV" required>
 
+                <!--This part of the code is the form payment information where user will have to fill up-->
+                <input type="text" id="card_number" name="card_number" placeholder="Card Number" required>  <!--Input - Accound Number-->
+                <input type="text" id="reenter_card_number" name="reenter_card_number" placeholder="Re-enter Card Number" required> <!--input - Re-enter Account Number-->
+                <input type="text" id="expiry_date" name="expiry_date" placeholder="Expiry Date (MM/YY)" required> <!--Input - Expiry Date-->
+                <input type="text" id="cvv" name="cvv" placeholder="CVV" required> <!--Input - CVV security-->
+
+                <!--This part of the code is a check input to save address information and payment information -->
                 <label><input type="checkbox" name="save_details"> Save delivery and payment details</label>
 
+                <!--This part of the code is a button tha is to submit the orders after all information have been placed in their input field-->
                 <button type="submit" class="btn">Place Order</button>
             </form>
         </div>
 
-        <!-- Order Summary -->
+        <!-- This part of the code is the Order Summary -->
         <div class="card">
             <h2>Order Summary</h2>
             {% for item in cart_items %}
+            <!--This (Loop) goes through each cart item to display its summary -->
                 <div class="order-summary-item">
-                    <img src="{{ url_for('static', filename=item.image_url) }}" alt="{{ item.name }}" style="width: 50px; height: 50px;">
-                    <p>{{ item.name }} x {{ item.quantity }}</p>
-                    <p class="order-summary-price">${{ "%.2f"|format(item.total) }}</p>
+                    <img src="{{ url_for('static', filename=item.image_url) }}" alt="{{ item.name }}" style="width: 50px; height: 50px;">   <!-- Display product image -->
+                    <p>{{ item.name }} x {{ item.quantity }}</p> <!-- Display product name and quantity -->
+                    <p class="order-summary-price">${{ "%.2f"|format(item.total) }}</p> <!-- Display total price for the item -->
                 </div>
             {% endfor %}
-            <p class="total-price">Cart Total: ${{ "%.2f"|format(total_price) }}</p>
-            <p class="total-price">Total Weight: {{ "%.2f"|format(total_weight) }} lbs</p>
+            <p class="total-price">Cart Total: ${{ "%.2f"|format(total_price) }}</p>  <!-- Display the total price of all items in the cart -->
+            <p class="total-price">Total Weight: {{ "%.2f"|format(total_weight) }} lbs</p> <!-- Display the total weight of all items in the cart -->
             {% if delivery_charge > 0 %}
-                <p class="total-price">Delivery Charge: ${{ "%.2f"|format(delivery_charge) }}</p>
+            <!-- This part of the code (Loop) is if there is a delivery charge, display the charge -->
+                <p class="total-price">Delivery Charge: ${{ "%.2f"|format(delivery_charge) }}</p> 
             {% else %}
-                <p class="total-price">Delivery Charge: Free</p>
+                <p class="total-price">Delivery Charge: Free</p> <!-- If delivery is free, display "Free" -->
             {% endif %}
-            <p class="total-price">Final Total: ${{ "%.2f"|format(final_total) }}</p>
+            <p class="total-price">Final Total: ${{ "%.2f"|format(final_total) }}</p> <!-- Display the final total including the delivery charge -->
         </div>
     </div>
 </body>

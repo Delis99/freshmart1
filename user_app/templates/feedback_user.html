@@ -6,32 +6,33 @@
     <link rel="stylesheet" href="../static/css/feedback_user.css">
     <title>Submit Your Feedback</title>
     <script>
-        // Show alert based on Flask success/error variable
+        // This part of the code is to Display an alert either sucessfully or an error message//
         {% if success %}
-            alert("Your feedback was successfully submitted!");
-            window.location.href = "{{ url_for('home') }}";  // Redirect to the home page
+            alert("Your feedback was successfully submitted!"); //Display the sucessfully alert//
+            window.location.href = "{{ url_for('home') }}";  // Redirect to the home page//
         {% elif error %}
-            alert("An error occurred while submitting your feedback. Please try again.");
+            alert("An error occurred while submitting your feedback. Please try again."); //Display and alert if an error happen//
         {% endif %}
     </script>
 </head>
 <body>
+    <!--Start of the body form-->
     <div class="container">
         <h1>We Value Your Feedback</h1>
-        <form action="{{ url_for('submit_feedback') }}" method="POST">
+        <form action="{{ url_for('submit_feedback') }}" method="POST"> <!--Input - -->
             <label for="name">Your Name</label>
-            <input type="text" id="name" name="name" placeholder="Enter your name" required>
+            <input type="text" id="name" name="name" placeholder="Enter your name" required><!--Input - Full Name-->
             <div class="tooltip">Please enter your full name.</div>
 
             <label for="email">Your Email</label>
-            <input type="email" id="email" name="email" placeholder="Enter your email" required>
+            <input type="email" id="email" name="email" placeholder="Enter your email" required><!--Input - Emeil-->
             <div class="tooltip">We'll use this email to get back to you if needed.</div>
 
             <label for="feedback">Your Feedback</label>
-            <textarea id="feedback" name="feedback" placeholder="Write your feedback here..." required></textarea>
+            <textarea id="feedback" name="feedback" placeholder="Write your feedback here..." required></textarea> <!--Input - The comment-->
             <div class="tooltip">Tell us what you think about our services.</div>
 
-            <button type="submit">Submit Feedback</button>
+            <button type="submit">Submit Feedback</button> <!--This is the button to submit the form for any comment-->
             <p class="note">Thank you for helping us improve!</p>
         </form>
     </div>

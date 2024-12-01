@@ -15,26 +15,30 @@ employee_bp = Blueprint('employee', __name__)
 def index_employee():
     return "Welcome to the Employee App!"
 
-# Initialize Flask app
+
+
+
+#------------------------------------------------------------------------------------------------------------------------------
+# This part of the code nitialize lask app.
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "your-default-secure-secret-key")
 
-# Configure session
+# This part of the code configure session
 app.permanent_session_lifetime = timedelta(days=7)
 app.config['SESSION_TYPE'] = 'filesystem'
 Session(app)
 
-# Configure logging
+# This part of the code configure logging
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
 
-# Set session to be permanent and define its lifetime
+# This part of the set the session to be permanent and define its lifetime
 app.permanent_session_lifetime = timedelta(days=7)
 
 @app.before_request
 def make_session_permanent():
     session.permanent = True
 
-# File upload configuration
+# This part of the code is the file upload configuration to saved the image after uploded in the inventory.
 app.config['UPLOAD_FOLDER'] = os.path.join('employee_app', 'static', 'uploads')
 app.config['ALLOWED_EXTENSIONS'] = {'jpg', 'jpeg', 'png', 'gif', 'webp'}
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -42,11 +46,11 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 USER_APP_UPLOADS_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), '../user_app/static/uploads')
 os.makedirs(USER_APP_UPLOADS_PATH, exist_ok=True)
 
-# Helper: Check allowed file extensions
+# This part of the code helper to check allowed file extensions
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
-# Helper: Save images in both directories
+# This part of the code save images in both directories
 def save_image_in_both_folders(file):
     filename = secure_filename(file.filename)
     if allowed_file(filename):
@@ -64,7 +68,13 @@ def save_image_in_both_folders(file):
         flash("Invalid file type.", "danger")
     return None
 
-# Route: Serve images
+
+
+
+
+
+#------------------------------------------------------------------------------------------------------------------------------
+# This part of the code is the serve images in python
 @app.route('/static/uploads/<filename>')
 def serve_upload(filename):
     return send_from_directory(USER_APP_UPLOADS_PATH, filename)
@@ -73,7 +83,12 @@ def serve_upload(filename):
 def make_session_permanent():
     session.permanent = True
 
-# Employee routes
+
+
+
+
+#------------------------------------------------------------------------------------------------------------------------------
+# This part of the code is the register employee in python
 @app.route('/register', methods=['GET', 'POST'])
 def register_employee():
     if request.method == 'POST':
@@ -84,13 +99,13 @@ def register_employee():
         re_password = request.form['re_password']
         contact = request.form['contact'] 
 
-        # Validate password strength
+        # This part of the code validate password strength
         password_regex = r"^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
         if not re.match(password_regex, password):
             flash("Password must contain at least 8 characters, one uppercase letter, one number, and one special character.", "danger")
             return redirect(url_for('register_employee'))
 
-        # Check if passwords match
+        # This part of the code check if passwords match
         if password != re_password:
             flash("Passwords do not match.", "danger")
             return redirect(url_for('register_employee'))
@@ -99,7 +114,7 @@ def register_employee():
             conn = get_db_connection()
             cursor = conn.cursor()
 
-            # Check if email already exists
+            # This part of the code check if email already exists
             cursor.execute("SELECT 1 FROM employees WHERE email = %s", (email,))
             email_exists = cursor.fetchone()
 
@@ -109,7 +124,7 @@ def register_employee():
                 conn.close()
                 return redirect(url_for('register_employee'))
 
-            # Insert new employee data
+            # This part of the code insert new employee data
             hashed_password = generate_password_hash(password)
             cursor.execute(
                 "INSERT INTO employees (first_name, last_name, email, hashed_password, contact) VALUES (%s, %s, %s, %s, %s)",
@@ -129,6 +144,12 @@ def register_employee():
     return render_template('register_employee.html')
 
 
+
+
+
+
+#------------------------------------------------------------------------------------------------------------------------------
+# This part of the code check if email exist in the database in python
 @app.route('/check_email', methods=['POST'])
 def check_email():
     email = request.json.get('email')
@@ -148,9 +169,12 @@ def check_email():
 
 
 
+
+#------------------------------------------------------------------------------------------------------------------------------
+# This part of the code is the login page in python
 @app.route('/login', methods=['GET', 'POST'])
 def login_employee():
-    # Retrieve and clear any previous flash messages
+    # This part of the code retrieve and clear any previous flash messages
     get_flashed_messages()
     
     if request.method == 'POST':
@@ -166,7 +190,7 @@ def login_employee():
             conn.close()
 
             if employee and check_password_hash(employee['hashed_password'], password):
-                # Save employee session details
+                # This part of the code save employee session details
                 session['employee_id'] = employee['id']
                 session['employee_name'] = employee['first_name']
                 session['employee_last_name'] = employee['last_name']
@@ -188,25 +212,24 @@ def login_employee():
 
 
 
-
-# Employee Dashboard Route
+#------------------------------------------------------------------------------------------------------------------------------
+# This part of the code is the index employee that do not require login python
 @app.route('/')
 def index_employee():
-    # This is the index page that does not require login
     return render_template('index_employee.html')
 
-# Employee Portal Route (after login)
+# This part of the code is the employee Portal after login.
 @app.route('/portal')
 def portal_employee():
     try:
         if 'employee_id' not in session:
             flash("You must be logged in to view the portal.", "warning")
-            return redirect(url_for('login_employee'))  # Redirect to login page if not logged in
+            return redirect(url_for('login_employee'))  # This part of the code redirect to the login page if not logged in
 
-        # Retrieve employee data from session
+        # This part of the code retrieve employee data from session
         employee_id = session.get('employee_id')
 
-        # Fetch the employee details from the database
+        # This part of the code fetch the employee details from the database
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
         cursor.execute("SELECT first_name, last_name, email, role FROM employees WHERE id = %s", (employee_id,))
@@ -215,7 +238,7 @@ def portal_employee():
         conn.close()
 
         if employee:
-            # Pass employee data to the portal template
+            # This part of code pass employee data to the portal template
             return render_template('portal_employee.html', 
                                    name=employee['first_name'], 
                                    last_name=employee['last_name'],
@@ -227,18 +250,23 @@ def portal_employee():
 
     except Exception as e:
         flash(f"An error occurred: {str(e)}", "danger")
-        return redirect(url_for('login_employee'))  # In case of an error, redirect to login
+        return redirect(url_for('login_employee'))  # This part of code is if in case of an error, redirect to login
+    
+
     
 
 
-# Inventory management routes
+
+
+#------------------------------------------------------------------------------------------------------------------------------
+# This part of the code is the inventory management in python
 @app.route('/manage_inventory')
 def manage_inventory():
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
 
-        # Fetch products ordered alphabetically by name
+        # This part of the code fetch products ordered alphabetically by name
         cursor.execute("SELECT * FROM products ORDER BY name ASC")
         products = cursor.fetchall()
 
@@ -250,9 +278,14 @@ def manage_inventory():
         logging.error(f"Error fetching products: {e}")
         flash("Failed to load inventory.", "danger")
         return render_template('manage_inventory.html', products=[])
+    
 
 
 
+
+
+#------------------------------------------------------------------------------------------------------------------------------
+#
 @app.route('/add_product', methods=['POST'])
 def add_product():
     try:
@@ -300,6 +333,8 @@ def add_product():
 
 
 
+#------------------------------------------------------------------------------------------------------------------------------
+#
 @app.route('/delete_product/<int:product_id>', methods=['POST'])
 def delete_product(product_id):
     try:
@@ -324,6 +359,11 @@ def delete_product(product_id):
 
 
 
+
+
+
+#------------------------------------------------------------------------------------------------------------------------------
+#
 @app.route('/update_quantity/<int:product_id>', methods=['POST'])
 def update_quantity(product_id):
     try:
@@ -372,6 +412,10 @@ def update_quantity(product_id):
 
 
 
+
+
+#------------------------------------------------------------------------------------------------------------------------------
+#
 @app.route('/search_product', methods=['GET'])
 def search_product():
     search_query = request.args.get('search_query', '')
@@ -391,6 +435,10 @@ def search_product():
 
 
 
+
+
+
+#------------------------------------------------------------------------------------------------------------------------------
 #This part of the code is to collect the information from the database.
 @app.route('/customer_support')
 def customer_support():
@@ -427,13 +475,17 @@ def delete_feedback(feedback_id):
 
 
 
+
+
+#------------------------------------------------------------------------------------------------------------------------------
+# This part of the code is the employee profiles in python
 @app.route('/employee_profiles', methods=['GET', 'POST'])
 def employee_profiles():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
     if request.method == 'POST':
-        # Update employee details
+        # This part of the code update the employee details
         employee_id = request.form['employee_id']
         first_name = request.form['first_name']
         last_name = request.form['last_name']
@@ -452,7 +504,7 @@ def employee_profiles():
         except Exception as e:
             flash(f"Error updating employee: {e}", "danger")
 
-    # Fetch employees to display
+    # This part of the code fetch employees to display from the database.
     sql = "SELECT * FROM employees ORDER BY first_name ASC"
     search_term = request.args.get('search', '').strip()
     if search_term:
@@ -468,13 +520,17 @@ def employee_profiles():
     return render_template('employee_profiles.html', employees=employees, search_term=search_term)
 
 
+
+
+#------------------------------------------------------------------------------------------------------------------------------
+# This part of the code is the delete employee in python
 @app.route('/delete_employee/<int:employee_id>', methods=['POST'])
 def delete_employee(employee_id):
     conn = get_db_connection()
     cursor = conn.cursor()
 
     try:
-        # Delete the employee by ID
+        # This part of the code is the delete the employee by ID
         cursor.execute("DELETE FROM employees WHERE id = %s", (employee_id,))
         conn.commit()
         flash("Employee deleted successfully!", "success")
@@ -487,8 +543,10 @@ def delete_employee(employee_id):
     return redirect(url_for('employee_profiles'))
 
 
-# Route to manage orders
-# Route to manage orders
+
+
+#------------------------------------------------------------------------------------------------------------------------------
+# This part of the code is the manage orders in python
 @app.route('/orders', methods=['GET'])
 def orders():
     search_query = request.args.get('search', '').strip()
@@ -496,7 +554,7 @@ def orders():
     cursor = conn.cursor(dictionary=True)
 
     if search_query:
-        # Fetch orders by search query with status 'Order Placed'
+        # This part of the code fetch orders by search query with status 'Order Placed'
         query = """
             SELECT *, DATE_FORMAT(created_at, '%M %d, %Y %h:%i %p') AS formatted_date
             FROM orders
@@ -506,7 +564,7 @@ def orders():
         """
         cursor.execute(query, (f"%{search_query}%", f"%{search_query}%", f"%{search_query}%"))
     else:
-        # Fetch all orders with status 'Order Placed'
+        # This part of the code fetch all orders with status 'Order Placed'
         query = """
             SELECT *, DATE_FORMAT(created_at, '%M %d, %Y %h:%i %p') AS formatted_date
             FROM orders
@@ -523,9 +581,8 @@ def orders():
 
 
 
-
-
-
+#------------------------------------------------------------------------------------------------------------------------------
+# This part of the code is the Generate Labels page in python
 @app.route('/labels', methods=['GET'])
 def labels():
     search_query = request.args.get('search', '').strip()
@@ -534,7 +591,7 @@ def labels():
 
     try:
         if search_query:
-            # Fetch orders by ID and ensure the status is 'Order Placed'
+            # This part of the code fetch orders by ID and ensure the status is 'Order Placed'
             query = """
                 SELECT * 
                 FROM orders 
@@ -542,7 +599,7 @@ def labels():
             """
             cursor.execute(query, (search_query,))
         else:
-            # Fetch all orders with the status 'Order Placed'
+            # This part of the code fetch all orders with the status 'Order Placed'
             query = """
                 SELECT * 
                 FROM orders 
@@ -551,15 +608,15 @@ def labels():
             """
             cursor.execute(query)
 
-        # Fetch all matching rows
+        # This part od the code fetch all matching rows
         orders = cursor.fetchall()
 
-        # Debugging: Print the results to check
+        # This part of the code print the results to check
         print("Fetched Orders:", orders)
 
     except Exception as e:
-        print("Error fetching orders:", e)  # Log the error
-        orders = []  # Return an empty list if something goes wrong
+        print("Error fetching orders:", e)  #
+        orders = []  # This part of the code return an empty list if something goes wrong
 
     finally:
         cursor.close()
@@ -569,22 +626,22 @@ def labels():
 
 
 
-
+#------------------------------------------------------------------------------------------------------------------------------
+#This part of the code is the Ready for Delivery. When employee already looked for all of the pruduct and put the labels. 
 @app.route('/mark_ready_for_delivery', methods=['POST'])
 def mark_ready_for_delivery():
     try:
-        # Parse JSON data
+      
         data = request.get_json()
         if not data or 'order_id' not in data:
             return jsonify({"message": "Invalid request. 'order_id' is required."}), 400
 
         order_id = data['order_id']
         
-        # Connect to the database
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Update the status of the order
+        # This part of the code update the status of the order
         query = "UPDATE orders SET status = 'Ready for Delivery' WHERE id = %s"
         cursor.execute(query, (order_id,))
         conn.commit()
@@ -599,13 +656,14 @@ def mark_ready_for_delivery():
     
 
 
-
+#------------------------------------------------------------------------------------------------------------------------------
+# This part of the code is the order history where we can store all order and it delete automaticly after 30 days in python
 @app.route('/order_history', methods=['GET'])
 def order_history():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
-    # Fetch order history
+    # This part of the code fetch order history
     query = """
         SELECT id, first_name, last_name, street_address, city, zip_code, 
                order_summary, delivery_image, 
@@ -625,12 +683,13 @@ def order_history():
 
 
 
+#------------------------------------------------------------------------------------------------------------------------------
+# This part of the code is the logout in python
 @app.route('/logout')
 def logout():
     session.clear()
     flash("Logged out successfully.", "info")
     return redirect(url_for('login_employee'))
-
 
 
 if __name__ == '__main__':
